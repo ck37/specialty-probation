@@ -120,6 +120,11 @@ clean_dataset = function(data, keep_fields) {
 }
 
 covariates = clean_dataset(data, keep_fields)
+
+# Convert site from labelled to numeric.
+covariates$site = as.numeric(covariates$site)
+table(covariates$site, useNA="ifany")
+
 save(covariates, file="data/covariates.RData")
 
 ############################################
@@ -149,6 +154,9 @@ keep_fields[[assignment]] = "site"
 keep_fields[["STUDYID"]] = "studyid"
 
 violence = clean_dataset(data, keep_fields)
+violence$site = as.numeric(violence$site)
+table(violence$site)
+
 save(violence, file="data/violence.RData")
 
 
@@ -165,6 +173,8 @@ keep_fields$PB_site = "site"
 keep_fields$anyarrest0to2yr = "any_arrest"
 
 arrest = clean_dataset(data, keep_fields)
+arrest$site = as.numeric(arrest$site)
+
 save(arrest, file="data/arrests.RData")
 
 ############################################
@@ -172,9 +182,9 @@ save(arrest, file="data/arrests.RData")
 # Combined dataset.
 library(dplyr)
 
-data = left_join(covariates, violence, by="studyid")
+data = left_join(covariates, violence, by=c("studyid", "site"))
 dim(data)
-data = left_join(data, arrest, by="studyid")
+data = left_join(data, arrest, by=c("studyid", "site"))
 dim(data)
 names(data)
 
