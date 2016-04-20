@@ -48,7 +48,16 @@ review_by_string = function(data, string, ignore_case = T) {
 # Initialize to an empty list.
 keep_fields = list()
 
+###################
+# Primary participant id.
 keep_fields$STUDYID = "studyid"
+
+###################
+# OUTCOMES.
+review_by_string(data, "AnyFullCONSERV")
+
+###################
+# COVARIATES.
 
 # Review possible age fields.
 review_by_string(data, "Age")
@@ -103,23 +112,27 @@ review_by_string(data, "gaf")
 # Anxiety subscale of personal assessment inventory.
 review_by_string(data, "anxiety")
 
-# Create a blank data frame with the correct number of rows.
-clean_data = data.frame(matrix(nrow=nrow(data)))
-# Remove the weird default column that was created.
-clean_data[, 1] = NULL
-dim(clean_data)
 
-cat("Saving fields... ")
-keep_fields
-names(keep_fields)
-for (name in names(keep_fields)) {
-  cat(name, " ")
-  clean_data[, keep_fields[[name]]] = data[, name]
+clean_dataset = function(data, keep_fields) {
+  # Create a blank data frame with the correct number of rows.
+  clean_data = data.frame(matrix(nrow=nrow(data)))
+  # Remove the weird default column that was created.
+  clean_data[, 1] = NULL
+  dim(clean_data)
+
+  cat("Saving fields... ")
+  keep_fields
+  names(keep_fields)
+  for (name in names(keep_fields)) {
+    cat(name, " ")
+    clean_data[, keep_fields[[name]]] = data[, name]
+  }
+  print(dim(clean_data))
+  print(names(clean_data))
+  clean_data
 }
-dim(clean_data)
-names(clean_data)
 
-data = clean_data
+data = clean_dataset(data, keep_fields)
 save(data, file="data/analysis-dataset.RData")
 
 ```
