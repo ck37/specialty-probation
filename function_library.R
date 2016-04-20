@@ -30,13 +30,13 @@ clean_dataset = function(data, keep_fields) {
   clean_data
 }
 
-impute_missing_values = function(data, add_indicators = T) {
+impute_missing_values = function(data, add_indicators = T, skip_vars = c()) {
   # Loop over each feature.
   missing_indicators = NULL
   for (i in 1:ncol(data)){
     nas = sum(is.na(data[, i]))
     # Nothing to impute, continue to next column.
-    if (nas == 0) {
+    if (nas == 0 || names(data)[i] %in% skip_vars) {
       #cat("Skipping", i, "\n")
       next
     }

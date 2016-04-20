@@ -190,8 +190,11 @@ names(data)
 # Review NAs.
 apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
 
+outcomes = c("any_violence", "any_arrest")
+
 # Impute missing data
-data = impute_missing_values(data)
+# WARNING: this is imputed misisng outcome data as well, which needs to be reverted.
+data = impute_missing_values(data, skip_vars = outcomes)
 
 # Check NAs.
 apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
