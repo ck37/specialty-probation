@@ -4,13 +4,13 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-# Load some custom functions.
-source("function_library.R")
 ```
 
 ```{r}
 library(haven)
 
+# Load custom functions.
+source("function_library.R")
 
 data = read_spss("inbound/MASTER Full Probationer Merged Jan 2012.sav")
 dim(data)
@@ -178,8 +178,13 @@ data = left_join(data, covariates, by=c("studyid", "site"))
 dim(data)
 names(data)
 
+# Site 0 is actually the treatment site (speciality probation).
+data$treatment = as.numeric(data$site == 0)
+table(data$treatment, data$site, useNA="ifany")
+data$site = NULL
+
 # Make studyid and site the first two variables in the dataset.
-data = cbind(data[, c("studyid", "site")], subset(data, select=-c(site, studyid)))
+data = cbind(data[, c("studyid", "treatment")], subset(data, select=-c(site, studyid)))
 names(data)
 
 # Review NAs.
