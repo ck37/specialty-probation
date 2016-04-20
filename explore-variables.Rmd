@@ -113,6 +113,7 @@ review_by_string(data, "gaf")
 review_by_string(data, "anxiety")
 
 
+# Create a new dataset with just the desired fields, which are also renamed.
 clean_dataset = function(data, keep_fields) {
   # Create a blank data frame with the correct number of rows.
   clean_data = data.frame(matrix(nrow=nrow(data)))
@@ -127,8 +128,9 @@ clean_dataset = function(data, keep_fields) {
     cat(name, " ")
     clean_data[, keep_fields[[name]]] = data[, name]
   }
-  print(dim(clean_data))
-  print(names(clean_data))
+  cat("\n")
+  cat("New dimensions:", paste(dim(clean_data), collapse=" "), "\n")
+  cat("New variables:", paste(names(clean_data), collapse=", "))
   clean_data
 }
 
