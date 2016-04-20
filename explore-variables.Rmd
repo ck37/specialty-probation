@@ -1,0 +1,95 @@
+---
+title: "Explore Variables"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+```
+
+```{r}
+library(haven)
+
+# Violence data.
+data = read_spss("inbound/FINAL Merged PO and Probationer FULL Violence File_Aug 2014.sav")
+names(data)
+dim(data)
+
+outcome = "AnyFullCONSERV_PrPo"
+tab = table(data[, outcome], useNA="ifany")
+tab
+prop.table(tab)
+
+
+assignment = "PB_Site"
+tab = table(data[, assignment], useNA="ifany")
+tab
+prop.table(tab)
+
+data = read_spss("inbound/MASTER Full Probationer Merged Jan 2012.sav")
+dim(data)
+
+# Too many columns to list them all.
+# paste(names(data), collapse=", ")
+
+head(names(data))
+tail(names(data))
+
+# Review distributions of variables that match a string.
+review_by_string = function(data, string, ignore_case = T) {
+  cols = grep(string, names(data), ignore.case=ignore_case)
+  print(names(data)[cols])
+  for (col in cols) {
+    cat(names(data)[col], ":\n")
+    print(summary(data[, col]))
+  }
+  return(invisible(cols))
+}
+
+# Review possible age fields.
+review_by_string(data, "Age")
+
+# Seems reasonable.
+table(data$AgeComputed, useNA="ifany")
+
+# Review the site fields.
+review_by_string(data, "Site", ignore_case=F)
+
+# Average age by site.
+# This matches table 1 in Manchak et al. 2014 "High fidelity..."
+tapply(data$AgeComputed, data$PB_Site, FUN=function(group) mean(group, na.rm=T))
+
+
+review_by_string(data, "Gender")
+
+review_by_string(data, "Race")
+
+# Looks reasonable but need to determine the codes.
+table(data$PB_race1.5)
+
+review_by_string(data, "probation")
+
+table(data$YRORLESSPROBATION, useNA="ifany")
+
+# Index offense or age at first offense?
+# May need to calculate age based on this date.
+review_by_string(data, "index")
+review_by_string(data, "first")
+# Still need to figure out index offense.
+
+# Recent violence.
+review_by_string(data, "violence")
+
+# Past psychiatric hospitalization.
+review_by_string(data, "hospital")
+
+# Colorado symptom index score.
+review_by_string(data, "Colorado")
+review_by_string(data, "csi")
+
+# Global assessment of function
+review_by_string(data, "gaf")
+
+# Anxiety subscale of personal assessment inventory.
+review_by_string(data, "anxiety")
+
+```
