@@ -9,21 +9,6 @@ output: html_document
 ```{r}
 library(haven)
 
-# Violence data.
-data = read_spss("inbound/FINAL Merged PO and Probationer FULL Violence File_Aug 2014.sav")
-names(data)
-dim(data)
-
-outcome = "AnyFullCONSERV_PrPo"
-tab = table(data[, outcome], useNA="ifany")
-tab
-prop.table(tab)
-
-
-assignment = "PB_Site"
-tab = table(data[, assignment], useNA="ifany")
-tab
-prop.table(tab)
 
 data = read_spss("inbound/MASTER Full Probationer Merged Jan 2012.sav")
 dim(data)
@@ -42,7 +27,7 @@ review_by_string = function(data, string, ignore_case = T) {
     cat(names(data)[col], ":\n")
     print(summary(data[, col]))
   }
-  return(invisible(cols))
+  return(invisible(names(data)[cols]))
 }
 
 # Initialize to an empty list.
@@ -134,7 +119,62 @@ clean_dataset = function(data, keep_fields) {
   clean_data
 }
 
-data = clean_dataset(data, keep_fields)
+covariates = clean_dataset(data, keep_fields)
+save(covariates, file="data/covariates.RData")
+
+############################################
+############################################
+# Violence data.
+data = read_spss("inbound/FINAL Merged PO and Probationer FULL Violence File_Aug 2014.sav")
+names(data)
+dim(data)
+
+outcome = review_by_string(data, "AnyFullCONSERV")[1]
+outcome
+
+keep_fields = list()
+keep_fields[[outcome]] = "any_violence"
+
+tab = table(data[, outcome], useNA="ifany")
+tab
+prop.table(tab)
+
+
+assignment = "PB_Site"
+tab = table(data[, assignment], useNA="ifany")
+tab
+prop.table(tab)
+keep_fields[[assignment]] = "site"
+
+keep_fields[["STUDYID"]] = "studyid"
+
+violence = clean_dataset(data, keep_fields)
+save(violence, file="data/violence.RData")
+
+
+############################################
+############################################
+# Arrest data.
+data = read_spss("inbound/FBI Arrests - File 3 - Baseline interview date - Jan 2012.sav")
+names(data)
+dim(data)
+
+keep_fields = list()
+keep_fields$StudyID = "studyid"
+keep_fields$PB_site = "site"
+keep_fields$anyarrest0to2yr = "any_arrest"
+
+arrest = clean_dataset(data, keep_fields)
+save(arrest, file="data/arrests.RData")
+
+############################################
+############################################
+# Combined dataset.
+library(dplyr)
+
+data = left_join(covariates, violence, by="studyid")
+data = left_join(data, arrest, by="studyid")
+
 save(data, file="data/analysis-dataset.RData")
 
 ```
