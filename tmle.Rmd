@@ -1,0 +1,62 @@
+---
+title: "TMLE"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data prep
+
+```{r cache=T}
+suppressMessages({ library(tmle) })
+load("data/analysis-dataset.RData")
+names(data)
+
+# Remove these indicators since they're for outcome variables.
+data$miss_any_arrest = NULL
+data$miss_any_violence = NULL
+
+# Remove outcomes, assignment, and study id from dataset when creating X dataframe.
+X = subset(data, select=-c(any_arrest, treatment, studyid, any_violence))
+names(X)
+
+# Convert factors to column indicators.
+W = model.matrix(~ . -1 , X)
+colnames(W)
+
+# Can enable this to check for missing data, or run manually.
+if (F) {
+  # Review missing data in W.
+  apply(W, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
+
+  # Review missing data in our treatment indicator.
+  table(data$treatment, useNA="ifany")
+  # Review missing data in our outcome indicator.
+  table(data$any_arrest, useNA="ifany")
+}
+
+```
+
+## TMLE
+
+### Arrest analysis
+
+```{r cache=T}
+# Use default SL library for now.
+result_arrest = tmle(Y=data$any_arrest, A=data$treatment, W=W, family="binomial")
+# Very significant reducton in arrest rate.
+result_arrest
+# Compare to a quick OLS regression.
+reg = glm(any_arrest ~ treatment, data=data, family="binomial")
+summary(reg)
+```
+
+### Violence analysis
+
+```{r cache=T}
+result_violence = tmle(Y=data$any_violence, A=data$treatment, W=W, family="binomial")
+# No effect on violence.
+result_violence
+```
