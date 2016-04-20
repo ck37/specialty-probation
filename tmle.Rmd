@@ -14,9 +14,11 @@ suppressMessages({ library(tmle) })
 load("data/analysis-dataset.RData")
 names(data)
 
-# Remove these indicators since they're for outcome variables.
-data$miss_any_arrest = NULL
-data$miss_any_violence = NULL
+# Handle missing outcome data.
+# We might (arguably) assume that missing data means that no bad thing happened.
+# There is probably some fancy missing data approach to use.
+data$any_violence[is.na(data$any_violence)] = 0
+data$any_arrest[is.na(data$any_arrest)] = 0
 
 # Remove outcomes, assignment, and study id from dataset when creating X dataframe.
 X = subset(data, select=-c(any_arrest, treatment, studyid, any_violence))
@@ -46,8 +48,10 @@ if (F) {
 ```{r cache=T}
 # Use default SL library for now.
 result_arrest = tmle(Y=data$any_arrest, A=data$treatment, W=W, family="binomial")
+
 # Very significant reducton in arrest rate.
 result_arrest
+
 # Compare to a quick OLS regression.
 reg = glm(any_arrest ~ treatment, data=data, family="binomial")
 summary(reg)
@@ -56,7 +60,9 @@ summary(reg)
 ### Violence analysis
 
 ```{r cache=T}
+# Use default SL library for now.
 result_violence = tmle(Y=data$any_violence, A=data$treatment, W=W, family="binomial")
+
 # No effect on violence.
 result_violence
 ```
