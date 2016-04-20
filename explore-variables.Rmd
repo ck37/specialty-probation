@@ -81,6 +81,8 @@ review_by_string(data, "index")
 review_by_string(data, "first")
 # Still need to figure out index offense.
 
+keep_fields$PB_numarrest = "number_of_arrests"
+
 # Recent violence.
 review_by_string(data, "violence")
 
