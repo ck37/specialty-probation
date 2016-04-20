@@ -88,11 +88,10 @@ review_by_string(data, "violence")
 review_by_string(data, "hospital")
 
 # Colorado symptom index score.
-review_by_string(data, "Colorado")
-review_by_string(data, "csi")
+keep_fields$PB_CSITotal = "CSI"
 
 # Global assessment of function
-review_by_string(data, "gaf")
+keep_fields$PB_GAFscore21 = "GAF"
 
 # Anxiety subscale of personal assessment inventory.
 review_by_string(data, "anxiety")
