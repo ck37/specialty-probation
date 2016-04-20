@@ -45,11 +45,17 @@ review_by_string = function(data, string, ignore_case = T) {
   return(invisible(cols))
 }
 
+# Initialize to an empty list.
+keep_fields = list()
+
+keep_fields$STUDYID = "studyid"
+
 # Review possible age fields.
 review_by_string(data, "Age")
 
 # Seems reasonable.
 table(data$AgeComputed, useNA="ifany")
+keep_fields$AgeComputed = "age"
 
 # Review the site fields.
 review_by_string(data, "Site", ignore_case=F)
@@ -57,18 +63,23 @@ review_by_string(data, "Site", ignore_case=F)
 # Average age by site.
 # This matches table 1 in Manchak et al. 2014 "High fidelity..."
 tapply(data$AgeComputed, data$PB_Site, FUN=function(group) mean(group, na.rm=T))
+keep_fields$PB_Site = "site"
 
 
 review_by_string(data, "Gender")
+table(data$PB_Gender1.1, data$PB_Gender3, useNA="ifany")
+keep_fields$PB_Gender1.1 = "gender"
 
 review_by_string(data, "Race")
-
 # Looks reasonable but need to determine the codes.
 table(data$PB_race1.5)
+keep_fields$PB_race1.5 = "race"
 
 review_by_string(data, "probation")
 
 table(data$YRORLESSPROBATION, useNA="ifany")
+
+keep_fields$YRORLESSPROBATION = "year_or_less_probation"
 
 # Index offense or age at first offense?
 # May need to calculate age based on this date.
@@ -91,5 +102,24 @@ review_by_string(data, "gaf")
 
 # Anxiety subscale of personal assessment inventory.
 review_by_string(data, "anxiety")
+
+# Create a blank data frame with the correct number of rows.
+clean_data = data.frame(matrix(nrow=nrow(data)))
+# Remove the weird default column that was created.
+clean_data[, 1] = NULL
+dim(clean_data)
+
+cat("Saving fields... ")
+keep_fields
+names(keep_fields)
+for (name in names(keep_fields)) {
+  cat(name, " ")
+  clean_data[, keep_fields[[name]]] = data[, name]
+}
+dim(clean_data)
+names(clean_data)
+
+data = clean_data
+save(data, file="data/analysis-dataset.RData")
 
 ```
