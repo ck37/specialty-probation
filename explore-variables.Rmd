@@ -187,6 +187,13 @@ data = left_join(data, arrest, by=c("studyid", "site"))
 dim(data)
 names(data)
 
+# Review NAs.
+apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
+
+# Race should be a factor.
+data$race = as.factor(data$race)
+table(data$race)
+
 save(data, file="data/analysis-dataset.RData")
 
 ```
