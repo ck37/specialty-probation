@@ -37,9 +37,10 @@ keep_fields = list()
 # Primary participant id.
 keep_fields$STUDYID = "studyid"
 
-###################
-# OUTCOMES.
-review_by_string(data, "AnyFullCONSERV")
+# Review the site fields.
+review_by_string(data, "Site", ignore_case=F)
+keep_fields$PB_Site = "site"
+
 
 ###################
 # COVARIATES.
@@ -51,14 +52,9 @@ review_by_string(data, "Age")
 table(data$AgeComputed, useNA="ifany")
 keep_fields$AgeComputed = "age"
 
-# Review the site fields.
-review_by_string(data, "Site", ignore_case=F)
-
 # Average age by site.
 # This matches table 1 in Manchak et al. 2014 "High fidelity..."
 tapply(data$AgeComputed, data$PB_Site, FUN=function(group) mean(group, na.rm=T))
-keep_fields$PB_Site = "site"
-
 
 review_by_string(data, "Gender")
 table(data$PB_Gender1.1, data$PB_Gender3, useNA="ifany")
@@ -122,9 +118,15 @@ clean_dataset = function(data, keep_fields) {
 
 covariates = clean_dataset(data, keep_fields)
 
+# Additonal cleanup of covariate fields.
+
 # Convert site from labelled to numeric.
 covariates$site = as.numeric(covariates$site)
 table(covariates$site, useNA="ifany")
+
+# Race should be a factor.
+covariates$race = as.factor(covariates$race)
+table(covariates$race)
 
 save(covariates, file="data/covariates.RData")
 
@@ -152,9 +154,11 @@ tab
 prop.table(tab)
 keep_fields[[assignment]] = "site"
 
-keep_fields[["STUDYID"]] = "studyid"
+keep_fields$STUDYID = "studyid"
 
 violence = clean_dataset(data, keep_fields)
+
+# Convert site from "labelled" to numeric so that it can be merged on.
 violence$site = as.numeric(violence$site)
 table(violence$site)
 
@@ -174,6 +178,8 @@ keep_fields$PB_site = "site"
 keep_fields$anyarrest0to2yr = "any_arrest"
 
 arrest = clean_dataset(data, keep_fields)
+
+# Convert site from "labelled" to numeric so that it can be merged on.
 arrest$site = as.numeric(arrest$site)
 
 save(arrest, file="data/arrests.RData")
@@ -183,18 +189,22 @@ save(arrest, file="data/arrests.RData")
 # Combined dataset.
 library(dplyr)
 
-data = left_join(covariates, violence, by=c("studyid", "site"))
+# First combine outcomes.
+data = left_join(violence, arrest, by=c("studyid", "site"))
 dim(data)
-data = left_join(data, arrest, by=c("studyid", "site"))
+# Then add on covariates.
+data = left_join(data, covariates, by=c("studyid", "site"))
 dim(data)
+
+# Make studyid and site the first two variables in the dataset.
+data = cbind(data[, c("studyid", "site")], subset(data, select=-c(site, studyid)))
 names(data)
 
 # Review NAs.
 apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
 
-# Race should be a factor.
-data$race = as.factor(data$race)
-table(data$race)
+# Impute missing data?
+# TBD.
 
 save(data, file="data/analysis-dataset.RData")
 
