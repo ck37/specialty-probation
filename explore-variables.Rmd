@@ -4,6 +4,8 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+# Load some custom functions.
+source("function_library.R")
 ```
 
 ```{r}
@@ -19,16 +21,6 @@ dim(data)
 head(names(data))
 tail(names(data))
 
-# Review distributions of variables that match a string.
-review_by_string = function(data, string, ignore_case = T) {
-  cols = grep(string, names(data), ignore.case=ignore_case)
-  print(names(data)[cols])
-  for (col in cols) {
-    cat(names(data)[col], ":\n")
-    print(summary(data[, col]))
-  }
-  return(invisible(names(data)[cols]))
-}
 
 # Initialize to an empty list.
 keep_fields = list()
@@ -93,28 +85,6 @@ keep_fields$PB_GAFscore21 = "GAF"
 
 # Anxiety subscale of personal assessment inventory.
 review_by_string(data, "anxiety")
-
-
-# Create a new dataset with just the desired fields, which are also renamed.
-clean_dataset = function(data, keep_fields) {
-  # Create a blank data frame with the correct number of rows.
-  clean_data = data.frame(matrix(nrow=nrow(data)))
-  # Remove the weird default column that was created.
-  clean_data[, 1] = NULL
-  dim(clean_data)
-
-  cat("Saving fields... ")
-  keep_fields
-  names(keep_fields)
-  for (name in names(keep_fields)) {
-    cat(name, " ")
-    clean_data[, keep_fields[[name]]] = data[, name]
-  }
-  cat("\n")
-  cat("New dimensions:", paste(dim(clean_data), collapse=" "), "\n")
-  cat("New variables:", paste(names(clean_data), collapse=", "))
-  clean_data
-}
 
 covariates = clean_dataset(data, keep_fields)
 
@@ -203,8 +173,11 @@ names(data)
 # Review NAs.
 apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
 
-# Impute missing data?
-# TBD.
+# Impute missing data
+data = impute_missing_values(data)
+
+# Check NAs.
+apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
 
 save(data, file="data/analysis-dataset.RData")
 
