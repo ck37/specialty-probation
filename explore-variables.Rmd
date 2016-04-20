@@ -149,6 +149,13 @@ keep_fields$anyarrest0to2yr = "any_arrest"
 
 arrest = clean_dataset(data, keep_fields)
 
+# Review missing data in the arrest column.
+table(arrest$any_arrest, useNA="ifany")
+sum(arrest$any_arrest == 99)
+# 99 is a code for NA in the original arrest dataset.
+arrest$any_arrest[arrest$any_arrest == 99] = NA
+table(arrest$any_arrest, useNA="ifany")
+
 # Convert site from "labelled" to numeric so that it can be merged on.
 arrest$site = as.numeric(arrest$site)
 
@@ -162,9 +169,14 @@ library(dplyr)
 # First combine outcomes.
 data = left_join(violence, arrest, by=c("studyid", "site"))
 dim(data)
+names(data)
+table(data$any_violence)
+table(data$any_arrest)
+
 # Then add on covariates.
 data = left_join(data, covariates, by=c("studyid", "site"))
 dim(data)
+names(data)
 
 # Make studyid and site the first two variables in the dataset.
 data = cbind(data[, c("studyid", "site")], subset(data, select=-c(site, studyid)))

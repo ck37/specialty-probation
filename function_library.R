@@ -37,6 +37,7 @@ impute_missing_values = function(data, add_indicators = T) {
     nas = sum(is.na(data[, i]))
     # Nothing to impute, continue to next column.
     if (nas == 0) {
+      #cat("Skipping", i, "\n")
       next
     }
     #cat("Found", nas, "missing values for", colnames(data)[i], "\n")
@@ -59,10 +60,10 @@ impute_missing_values = function(data, add_indicators = T) {
     if (class(data[, i]) == "factor") {
       # Impute factors to the mode.
       # Choose the first mode in case of ties.
-      data[, i] = Mode(data[, i])[1]
+      data[is.na(data[, i]), i] = Mode(data[, i])[1]
     } else {
       # Impute numeric values to the median.
-      data[, i] = median(data[, i], na.rm=T)
+      data[is.na(data[, i]), i] = median(data[, i], na.rm=T)
     }
   }
   if (add_indicators) {
