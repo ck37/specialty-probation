@@ -173,7 +173,10 @@ save(arrest, file="data/arrests.RData")
 library(dplyr)
 
 data = left_join(covariates, violence, by="studyid")
+dim(data)
 data = left_join(data, arrest, by="studyid")
+dim(data)
+names(data)
 
 save(data, file="data/analysis-dataset.RData")
 
