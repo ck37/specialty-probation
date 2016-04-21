@@ -70,6 +70,7 @@ review_by_string(data, "first")
 # Still need to figure out index offense.
 
 keep_fields$PB_numarrest = "number_of_arrests"
+keep_fields$PB_everarrested18.3 = "father_arrested"
 
 # Recent violence.
 review_by_string(data, "violence")

@@ -80,6 +80,7 @@ review_by_string(data, "probation")
 table(data$YRORLESSPROBATION, useNA="ifany")
 
 keep_fields$YRORLESSPROBATION = "year_or_less_probation"
+keep_fields$PB_everarrested18.3 = "father_arrested"
 
 # Index offense or age at first offense?
 # May need to calculate age based on this date.
