@@ -87,6 +87,27 @@ keep_fields$PB_GAFscore21 = "GAF"
 # Anxiety subscale of personal assessment inventory.
 review_by_string(data, "anxiety")
 
+# Most serious crime ever
+keep_fields$PB_rcrimes2.2 = "most_serious_crime"
+
+# Most serious charge from record
+keep_fields$PB_rec4sericharge = "most_serious_charge"
+
+# PAI subscale scores
+keep_fields$PB_SOM = "PAI_somatization"
+keep_fields$PB_ANX = "PAI_anxiety_physio"
+keep_fields$PB_ARD = "PAI_anxiety_dis"
+keep_fields$PB_DEP = "PAI_depression"
+keep_fields$PB_MAN = "PAI_paranoia"
+keep_fields$PB_SCZ = "PAI_schizophrenia"
+keep_fields$PB_BOR = "PAI_borderline" 
+keep_fields$PB_ANT = "PAI_antisocial"
+keep_fields$PB_AGG = "PAI_aggression"
+keep_fields$PB_PAIALC = "PAI_alcohol"
+keep_fields$PB_PAIDRG = "PAI_drug"
+
+
+
 covariates = clean_dataset(data, keep_fields)
 
 # Additonal cleanup of covariate fields.
