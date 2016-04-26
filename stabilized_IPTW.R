@@ -53,7 +53,7 @@ predict.SL.DSA <- function(object, newdata, family, ...) {
   return(pred)
 }
 
-lib <- c("SL.DSA","SL.polymars","SL.glm","SL.randomForest","SL.step.forward","SL.step.interaction","SL.glmnet","SL.knn")
+lib <- c("SL.DSA","SL.polymars","SL.glm","SL.stepAIC","SL.glmnet","SL.earth","SL.bayesglm")
 
 # fit the model to predict P(A|W)
 

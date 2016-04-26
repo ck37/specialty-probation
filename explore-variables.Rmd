@@ -106,6 +106,33 @@ keep_fields$PB_AGG = "PAI_aggression"
 keep_fields$PB_PAIALC = "PAI_alcohol"
 keep_fields$PB_PAIDRG = "PAI_drug"
 
+# categorical variable for age at first arrest
+
+keep_fields$PB_rehowold2.3 = "age_first_arrest_categ"
+
+keep_fields$PB_howold2.3 = "age_first_arrest"
+
+# recent violence prior to placement
+
+keep_fields$PB_aggvio6mo="recent_violence"
+
+# length on probation
+
+keep_fields$LOProbation="length_probation"
+
+# number of times hospitalized
+
+
+keep_fields$PB_times5.2a="times_hospitalized"
+
+keep_fields$PB_barehand="beaten_barehand"
+
+keep_fields$PB_somethinghrd18.5a="beaten_hard"
+
+keep_fields$PB_whipstrap18.6a="beaten_whipstrap"
+
+keep_fields$PB_bothersexlly18.11="bothered_sexually"
+
 
 
 covariates = clean_dataset(data, keep_fields)
@@ -168,6 +195,7 @@ keep_fields = list()
 keep_fields$StudyID = "studyid"
 keep_fields$PB_site = "site"
 keep_fields$anyarrest0to2yr = "any_arrest"
+keep_fields$indexoffense = "index_offense"
 
 arrest = clean_dataset(data, keep_fields)
 
