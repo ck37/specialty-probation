@@ -5,17 +5,18 @@ library("tmle")
 load("data/analysis-dataset.RData")
 load("data/covariates.RData")
 
-SL.library = c("SL.glm", "SL.step", "SL.glm.interaction", "SL.step.interaction")
+SL.library = c("SL.glm", "SL.step", "SL.glm.interaction")
 
 #Dealing with missing data for outcome
 data = data[!is.na(data$any_violence),]
 
 #Data frame X with covariates and exposure
-X = data.frame(A = data$treatment, data[,-c(grep("miss", names(data)), which(names(data)=="any_arrest"))])
+X = subset(data, select = -c(studyid, any_arrest, any_violence))
+
 #Data frames with A = 1 and A = 0
 X1 = X0 = X
-X1$A = 1
-X0$A = 0
+X1$treatment = 1
+X0$treatment = 0
 newdata = rbind(X, X1, X0)
 
 #Superlearn for Qbar
@@ -29,7 +30,7 @@ Qbar0W = Qinit$SL.predict[(2*n+1):(3*n)]
 PsiHat.SS = mean(Qbar1W - Qbar0W)
 
 #Data with only covariates and variables
-W = subset(X, select = -c(A))
+W = subset(X, select = -c(treatment))
 
 #Superlearn for g
 gHatSL = SuperLearner(Y = data$treatment, X = W, SL.library = SL.library, family = "binomial")
