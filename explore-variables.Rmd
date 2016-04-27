@@ -61,7 +61,7 @@ review_by_string(data, "probation")
 
 table(data$YRORLESSPROBATION, useNA="ifany")
 
-keep_fields$YRORLESSPROBATION = "year_or_less_probation"
+#keep_fields$YRORLESSPROBATION = "year_or_less_probation"
 
 # Index offense or age at first offense?
 # May need to calculate age based on this date.
@@ -70,7 +70,7 @@ review_by_string(data, "first")
 # Still need to figure out index offense.
 
 keep_fields$PB_numarrest = "number_of_arrests"
-keep_fields$PB_everarrested18.3 = "father_arrested"
+#keep_fields$PB_everarrested18.3 = "father_arrested"
 
 # Recent violence.
 review_by_string(data, "violence")
@@ -123,9 +123,9 @@ keep_fields$LOProbation="length_probation"
 # number of times hospitalized
 
 
-keep_fields$PB_times5.2a="times_hospitalized"
+#keep_fields$PB_times5.2a="times_hospitalized"
 
-keep_fields$PB_barehand="beaten_barehand"
+keep_fields$PB_barehand18.4a="beaten_barehand"
 
 keep_fields$PB_somethinghrd18.5a="beaten_hard"
 
@@ -133,6 +133,7 @@ keep_fields$PB_whipstrap18.6a="beaten_whipstrap"
 
 keep_fields$PB_bothersexlly18.11="bothered_sexually"
 
+keep_fields$PB_txcompliance="tx_compliance"
 
 
 covariates = clean_dataset(data, keep_fields)
@@ -208,6 +209,11 @@ table(arrest$any_arrest, useNA="ifany")
 
 # Convert site from "labelled" to numeric so that it can be merged on.
 arrest$site = as.numeric(arrest$site)
+
+# index_offense should be a factor
+
+arrest$index_offense[arrest$index_offense == 99] = NA
+
 
 save(arrest, file="data/arrests.RData")
 
