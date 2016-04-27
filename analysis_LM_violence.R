@@ -5,13 +5,13 @@ library("tmle")
 load("data/analysis-dataset.RData")
 load("data/covariates.RData")
 
-SL.library = c("SL.glm", "SL.step", "SL.glm.interaction", "SL.glmnet", "SL.step.interaction", "SL.rpartPrune")
+SL.library = c("SL.glm", "SL.step", "SL.glm.interaction", "SL.step.interaction")
 
 #Dealing with missing data for outcome
 data = data[!is.na(data$any_violence),]
 
 #Data frame X with covariates and exposure
-X = data.frame(A = data$treatment, data[,grep("miss", names(data))])
+X = data.frame(A = data$treatment, data[,-c(grep("miss", names(data)), which(names(data)=="any_arrest"))])
 #Data frames with A = 1 and A = 0
 X1 = X0 = X
 X1$A = 1
@@ -19,7 +19,7 @@ X0$A = 0
 newdata = rbind(X, X1, X0)
 
 #Superlearn for Qbar
-Qinit = SuperLearner(Y = data$any_violence, X = X, newX = newdata, SL.library = SL.library, family = "binomial")
+Qinit = SuperLearner(Y = data$any_violence, X = X, newX = newdata, SL.library = SL.library, family = "binomial", )
 n = dim(data)[1]
 QbarAW = Qinit$SL.predict[1:n]
 Qbar1W = Qinit$SL.predict[(n+1):(2*n)]
