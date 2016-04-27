@@ -244,8 +244,8 @@ data$treatment = as.numeric(data$site == 0)
 table(data$treatment, data$site, useNA="ifany")
 data$site = NULL
 
-# Make studyid and site the first two variables in the dataset.
-data = cbind(data[, c("studyid", "treatment")], subset(data, select=-c(site, studyid)))
+# Make studyid and treatment the first two variables in the dataset.
+data = cbind(data[, c("studyid", "treatment")], subset(data, select=-c(studyid, treatment)))
 names(data)
 
 # Review NAs.
