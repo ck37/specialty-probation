@@ -148,6 +148,11 @@ table(covariates$site, useNA="ifany")
 covariates$race = as.factor(covariates$race)
 table(covariates$race)
 
+# Add days not at risk from risk file
+riskdata = read_spss("inbound/All other CJ outcomes_Baseline Start_Jan 2012.sav")
+
+covariates$totnightsnotatriskbto24 = riskdata$totnightsnotatriskbto24
+
 save(covariates, file="data/covariates.RData")
 
 ############################################
@@ -258,3 +263,4 @@ apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
 save(data, file="data/analysis-dataset.RData")
 
 ```
+
