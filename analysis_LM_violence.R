@@ -5,11 +5,10 @@ library("tmle")
 load("data/analysis-dataset.RData")
 load("data/covariates.RData")
 
-SL.library = c("SL.glm", "SL.step", "SL.glm.interaction")
+SL.library = c("SL.glm", "SL.step", "SL.glm.interaction", "SL.glmnet", "SL.step.interaction", "SL.rpartPrune")
 
 #Dealing with missing data for outcome
-data$any_violence[is.na(data$any_violence)] = 0
-data$any_arrest[is.na(data$any_arrest)] = 0
+data = data[!is.na(data$any_violence),]
 
 #Data frame X with covariates and exposure
 X = data.frame(A = data$treatment, data[,grep("miss", names(data))])
