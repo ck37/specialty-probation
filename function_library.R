@@ -7,6 +7,8 @@ load_all_libraries = function() {
     library(RhpcBLASctl)  # Accurate physical core detection
     library(SuperLearner)
     library(xgboost)      # For GBM, see github for install instructions.
+    # library(DSA) # Not working, need to install from Mark's website?
+    library(earth)
   })
 }
 
@@ -395,7 +397,14 @@ create_SL_lib = function() {
   cat("XGBoost:", length(xgb_libs), "configurations.\n")
 
   # TODO: see if we want to tweak the hyperparameters of any of these models.
-  lib = c("SL.DSA", "SL.polymars", "SL.stepAIC", glmnet_libs, xgb_libs, "SL.earth")
+  #lib = c("SL.DSA", "SL.polymars", "SL.stepAIC", glmnet_libs, xgb_libs, "SL.earth")
+  # TODO: re-enable DSA once I can install the library.
+  lib = c("SL.polymars", "SL.stepAIC", glmnet_libs, xgb_libs, "SL.earth")
+  # Just do glmnet and xgboost for now.
+  lib = c(glmnet_libs, xgb_libs)
+  # JUST GLMNET
+  lib = c(glmnet_libs)
+  lib = c(xgb_libs)
 
   results = list(lib = lib, xgb_grid = xgb_grid)
   results

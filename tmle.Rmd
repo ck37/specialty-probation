@@ -49,6 +49,14 @@ source("function_library.R")
 load_all_libraries()
 cluster = setup_parallelism()
 
+# Use default SL library or our final (slow) one?
+if (F) {
+  sl_lib = c("SL.glm", "SL.step", "SL.glm.interaction")
+} else {
+  custom_lib = create_SL_lib()
+  sl_lib = custom_lib$lib
+}
+sl_lib
 ```
 
 ## TMLE
@@ -56,21 +64,23 @@ cluster = setup_parallelism()
 ### Arrest analysis
 
 ```{r cache=T}
-# Use default SL library for now.
 system.time({
-  result_arrest = tmle(Y=data$any_arrest, A=data$treatment, W=W, family="binomial")
+  # TODO: how long does this take?
+  result_arrest = tmle(Y=data$any_arrest, A=data$treatment, W=W, family="binomial",
+                        Q.SL.library = sl_lib, g.SL.library = sl_lib)
 })
 
 # Very significant reduction in arrest rate.
 result_arrest
 
 # Compare to a quick OLS regression.
-reg = glm(any_arrest ~ treatment, data=data, family="binomial")
+reg = glm(any_arrest ~ treatment, data=data_arrest, family="binomial")
 summary(reg)
 
 # Compare to manual TMLE.
 system.time({
-  result_arrest2 = estimate_effect(Y=data$Y, A=data$treatment, W=W_arrest, parallel = "multicore", cluster=cluster)
+  # TODO: how long does this take?
+  result_arrest2 = estimate_effect(Y=data_arrest$any_arrest, A=data_arrest$treatment, W=W_arrest, parallel = "multicore", sl_lib = sl_lib, cluster=cluster)
 })
 result_arrest2
 ```
@@ -78,8 +88,7 @@ result_arrest2
 ### Violence analysis
 
 ```{r cache=T}
-# Use default SL library for now.
-sl_lib = c("SL.glm", "SL.step", "SL.glm.interaction")
+
 system.time({
   # Takes about 45 minutes on CK's laptop.
   result_violence = tmle(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, family="binomial", Q.SL.library = sl_lib, g.SL.library = sl_lib)
@@ -90,7 +99,15 @@ result_violence
 
 # Compare to our own code:
 system.time({
+  # TODO: how long does this take?
   result_violence2 = estimate_effect(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, parallel = "multicore", sl_lib = sl_lib, cluster=cluster)
 })
 result_violence2
+
+```
+
+```{r}
+# Save our results since they took a long time to compute.
+save(result_arrest, result_arrest2, result_violence, result_violence2,
+     file="data/tmle-results.RData")
 ```
