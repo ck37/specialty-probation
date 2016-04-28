@@ -92,7 +92,7 @@ Mode = function(x) {
 }
 
 estimate_effect = function(Y, A, W,
-       family = "binomial",
+       family = "binomial", cv_folds = 10,
        sl_lib = c("SL.glmnet", "SL.step", "SL.glm.interaction"),
        parallel = NULL,
        cluster = NULL) {
@@ -101,6 +101,9 @@ estimate_effect = function(Y, A, W,
   data = data.frame(Y=Y, A=A, W)
 
   n = nrow(W)
+
+  # Allow custom # of CV folds.
+  cv_ctrl = SuperLearner.CV.control(V = cv_folds)
 
   # Create x df without the outcome variable.
   # x = subset(data, select=-Y)
@@ -128,7 +131,7 @@ estimate_effect = function(Y, A, W,
     }
   }
 
-  qinit = sl_fn(Y=Y, X=x, newX=newdata, SL.library=sl_lib, family=family)
+  qinit = sl_fn(Y=Y, X=x, newX=newdata, cvControl = cv_ctrl, SL.library=sl_lib, family=family)
   qinit
   QbarAW = qinit$SL.predict[1:n]
   Qbar1W = qinit$SL.predict[(n+1):(2*n)]
@@ -137,7 +140,7 @@ estimate_effect = function(Y, A, W,
 
   psihat_ss = mean(Qbar1W - Qbar0W)
 
-  gHatSL = sl_fn(Y=A, X=W, SL.library=sl_lib, family="binomial")
+  gHatSL = sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl, family="binomial")
   gHat1W = gHatSL$SL.predict
   gHat0W = 1 - gHat1W
 
