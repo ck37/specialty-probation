@@ -79,10 +79,14 @@ summary(reg)
 
 # Compare to manual TMLE.
 system.time({
-  # TODO: how long does this take?
+  # Takes about a minute with xgboost + glmnet on 4 cores.
   result_arrest2 = estimate_effect(Y=data_arrest$any_arrest, A=data_arrest$treatment, W=W_arrest, parallel = "multicore", sl_lib = sl_lib, cluster=cluster)
 })
 result_arrest2
+
+# Review SL weights
+result_arrest2$qinit
+result_arrest2$ghat
 ```
 
 ### Violence analysis
@@ -103,6 +107,10 @@ system.time({
   result_violence2 = estimate_effect(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, parallel = "multicore", sl_lib = sl_lib, cluster=cluster)
 })
 result_violence2
+
+# Review SL weights.
+result_violence2$qinit
+result_violence2$ghat
 
 ```
 
