@@ -92,7 +92,7 @@ Mode = function(x) {
 }
 
 estimate_effect = function(Y, A, W,
-       family = "binomial", cv_folds = 10,
+       family = "binomial", cv_folds = 10, digits = 5,
        sl_lib = c("SL.glmnet", "SL.step", "SL.glm.interaction"),
        parallel = NULL,
        cluster = NULL) {
@@ -132,13 +132,13 @@ estimate_effect = function(Y, A, W,
   }
 
   qinit = sl_fn(Y=Y, X=x, newX=newdata, cvControl = cv_ctrl, SL.library=sl_lib, family=family)
-  qinit
   QbarAW = qinit$SL.predict[1:n]
   Qbar1W = qinit$SL.predict[(n+1):(2*n)]
   Qbar0W = qinit$SL.predict[(2*n+1):(3*n)]
   # tail(cbind(data$A, QbarAW, Qbar1W, Qbar0W))
 
   psihat_ss = mean(Qbar1W - Qbar0W)
+  cat("Psihat simple substitution:", round(psihat_ss, digits), "\n")
 
   gHatSL = sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl, family="binomial")
   gHat1W = gHatSL$SL.predict
@@ -149,6 +149,7 @@ estimate_effect = function(Y, A, W,
   gHatAW[A == 0] = gHat0W[A == 0]
 
   psihat_iptw = mean((A == 1)*Y / gHatAW) - mean((A == 0)*Y / gHatAW)
+  cat("Psihat IPTW:", round(psihat_iptw, digits), "\n")
 
   h_aw = (A == 1)/gHat1W - (A == 0)/gHat0W
   # Same as?
@@ -167,6 +168,7 @@ estimate_effect = function(Y, A, W,
   Qbar0W_star = plogis(qlogis(Qbar0W) + eps * h_0w)
 
   psihat_tmle = mean(Qbar1W_star - Qbar0W_star)
+  cat("Psihat tmle:", round(psihat_tmle, digits), "\n")
 
   # Inference (Lab 6)
 
