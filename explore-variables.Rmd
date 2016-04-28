@@ -85,7 +85,7 @@ keep_fields$PB_CSITotal = "CSI"
 keep_fields$PB_GAFscore21 = "GAF"
 
 # Anxiety subscale of personal assessment inventory.
-review_by_string(data, "anxiety")
+review_by_string(data, "RXR")
 
 # Most serious crime ever
 keep_fields$PB_rcrimes2.2 = "most_serious_crime"
@@ -105,10 +105,12 @@ keep_fields$PB_ANT = "PAI_antisocial"
 keep_fields$PB_AGG = "PAI_aggression"
 keep_fields$PB_PAIALC = "PAI_alcohol"
 keep_fields$PB_PAIDRG = "PAI_drug"
+keep_fields$PB_PAIRXR = "PAI_RXR"
+
 
 # categorical variable for age at first arrest
 
-keep_fields$PB_rehowold2.3 = "age_first_arrest_categ"
+#keep_fields$PB_rehowold2.3 = "age_first_arrest_categ"
 
 keep_fields$PB_howold2.3 = "age_first_arrest"
 
@@ -133,7 +135,7 @@ keep_fields$PB_whipstrap18.6a="beaten_whipstrap"
 
 keep_fields$PB_bothersexlly18.11="bothered_sexually"
 
-keep_fields$PB_txcompliance="tx_compliance"
+#keep_fields$PB_txcompliance="tx_compliance"
 
 
 covariates = clean_dataset(data, keep_fields)
@@ -259,6 +261,10 @@ data = impute_missing_values(data, skip_vars = outcomes)
 
 # Check NAs.
 apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
+
+data$index_offense <- as.factor(data$index_offense)
+data$most_serious_crime <- as.factor(data$most_serious_crime)
+data$most_serious_charge <- as.factor(data$most_serious_charge)
 
 save(data, file="data/analysis-dataset.RData")
 
