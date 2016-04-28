@@ -3,11 +3,6 @@ load("data/analysis-dataset.RData")
 
 names(data)
 
-# Handle missing outcome data.
-# We might (arguably) assume that missing data means that no bad thing happened.
-# There is probably some fancy missing data approach to use.
-data$any_violence[is.na(data$any_violence)] = 0
-data$any_arrest[is.na(data$any_arrest)] = 0
 
 # Remove outcomes, assignment, and study id from dataset when creating X dataframe.
 X = subset(data, select=-c(treatment, studyid, any_violence))
