@@ -1,10 +1,12 @@
 load_all_libraries = function() {
   # Hide all the extra messages displayed when loading these libraries.
   suppressMessages({
-    library(foreach)   # For multicore
-    library(doMC)       # For multicore (not used at the moment)
-    library(doSNOW) # For multicore
-    library(RhpcBLASctl) # Accurate physical core detection
+    library(foreach)      # For multicore
+    library(doMC)         # For multicore
+    library(doSNOW)       # For multicore
+    library(RhpcBLASctl)  # Accurate physical core detection
+    library(SuperLearner)
+    library(xgboost)      # For GBM, see github for install instructions.
   })
 }
 
@@ -186,13 +188,13 @@ estimate_effect = function(Y, A, W,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
                  psihat_tmle = psihat_tmle,
                  tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p)
-  class(results) = "tmle"
+  class(results) = "tmle242"
   results
 }
 
 # Custom result printing.
 # TODO: make prettier.
-print.tmle = function(obj, digits = 4) {
+print.tmle242 = function(obj, digits = 4) {
   cat("Simple substitution estimate:", round(obj$psihat_ss, digits), "\n")
   cat("IPTW estimate:", round(obj$psihat_iptw, digits), "\n")
   cat("TMLE estimate:", round(obj$psihat_tmle, digits), "\n")
@@ -203,7 +205,7 @@ print.tmle = function(obj, digits = 4) {
 
 # Setup parallel processing, either multinode or multicore.
 # By default it uses a multinode cluster if available, otherwise sets up multicore via doMC.
-# Libraries required: parallel, doParallel, doMC, RhpcBLASctl, foreach
+# Libraries required: parallel, doSNOW, doMC, RhpcBLASctl, foreach
 setup_parallelism = function(conf = NULL, type="either", allow_multinode = T,
                              machine_list = Sys.getenv("SLURM_NODELIST"),
                              cpus_per_node = as.numeric(Sys.getenv("SLURM_CPUS_ON_NODE")),
@@ -242,7 +244,7 @@ setup_parallelism = function(conf = NULL, type="either", allow_multinode = T,
     capture.output({ cl = parallel::makeCluster(cores, type="PSOCK", outfile = outfile) })
     # doParallel supports multicore and multinode parallelism, but may require
     # explicitly exporting functions and libraries across the cluster.
-    registerDoParallel(cl)
+    registerDoSNOW(cl)
     setDefaultCluster(cl)
     parallel_type = "snow"
   } else {
@@ -283,4 +285,118 @@ stop_cluster = function(cluster_obj) {
     #cat("No cluster shutdown required.\n")
     invisible()
   }
+}
+
+### From Courtney's create_SL_library.R
+
+SL.DSA <- function(Y, X, newX, family, obsWeights, maxsize = 2*ncol(X), maxorderint = 2, maxsumofpow = 2, Dmove = TRUE, Smove = TRUE, vfold = 5, ...) {
+  require('DSA')
+  dsaweights <- matrix(obsWeights, nrow = (vfold +1), ncol = nrow(X), byrow = TRUE)
+  fit.DSA <- DSA(Y ~ 1, data = data.frame(Y, X), family = family, maxsize = maxsize, maxorderint = maxorderint, maxsumofpow = maxsumofpow, Dmove = Dmove, Smove = Smove, vfold = vfold, weights = dsaweights)
+  pred <- predict(fit.DSA, newdata = newX)
+  if(family$family == "binomial") { pred <- 1 / (1 + exp(-pred))}
+  fit <- list(object = fit.DSA)
+  out <- list(pred = pred, fit = fit)
+  class(out$fit) <- c("SL.DSA")
+  return(out)
+}
+
+#
+predict.SL.DSA <- function(object, newdata, family, ...) {
+  require('DSA')
+  pred <- predict(object = object$object, newdata = newdata)
+  if (family$family == "binomial") {
+    pred <- 1 / (1 + exp(-pred))
+  }
+  return(pred)
+}
+
+
+create.SL.glmnet <- function(alpha = c(0, 0.25, 0.50, 0.75, 1)) {
+  # TODO: don't use global vars here.
+  for(mm in seq(length(alpha))){
+    eval(parse(text = paste('SL.glmnet.', alpha[mm], '<- function(..., alpha = ', alpha[mm], ') SL.glmnet(..., alpha = alpha)', sep = '')), envir = .GlobalEnv)
+  }
+  invisible(TRUE)
+}
+
+SL.xgboost = function(Y, X, newX, family, obsWeights, id, ntrees = 1000,
+                      max_depth=4, shrinkage=0.1, minobspernode=10,
+                      early.stop.round=NULL, ...) {
+  # TODO: Convert to an xgboost compatible data matrix, using the sample weights.
+  #xgmat = xgb.DMatrix(as.matrix(X), label=Y, weight = obsWeights)
+  # We are not using sample weights currently:
+  xgmat = xgb.DMatrix(as.matrix(X), label=Y)
+
+  # TODO: support early stopping, which requires a watchlist. See ?xgb.train
+
+  if (family$family == "gaussian") {
+    # We restrict xgboost to 1 thread so that SL can control parallelization.
+    model = xgboost(data=xgmat, objective="reg:linear", nround = ntrees, max_depth = max_depth, minchildweight = minobspernode, eta = shrinkage, early.stop.round=early.stop.round, verbose=0, nthread = 1)
+  }
+  if (family$family == "binomial") {
+    # TODO: test this.
+    # We restrict xgboost to 1 thread so that SL can control parallelization.
+    model = xgboost(data=xgmat, objective="binary:logistic", nround = ntrees, max_depth = depth, minchildweight = minobspernode, eta = shrinkage, early.stop.round = early.stop.round, verbose=0, nthread = 1)
+  }
+  if (family$family == "multinomial") {
+    # TODO: test this.
+    model = xgboost(data=xgmat, objective="multi:softmax", nround = ntrees, max_depth = depth, minchildweight = minobspernode, eta = shrinkage, num_class=length(unique(Y)), early.stop.round = early.stop.round, verbose=0, nthread = 1)
+  }
+  pred = predict(model, newdata=data.matrix(newX))
+  fit = vector("list", length = 0)
+  class(fit) = c("SL.xgboost")
+  out = list(pred = pred, fit = fit)
+  return(out)
+}
+
+create.SL.xgboost = function(tune = list(ntrees = c(1000), max_depth = c(4), shrinkage = c(0.1), minobspernode = c(10))) {
+  # Create all combinations of hyperparameters, for grid-like search.
+  tuneGrid = expand.grid(tune, stringsAsFactors=F)
+
+  for (i in seq(nrow(tuneGrid))) {
+    # TODO: update this to not use the global environment by default.
+    eval(parse(text = paste0("SL.xgb.", i, "= function(..., ntrees = ", tuneGrid[i,]$ntrees, ", max_depth = ", tuneGrid[i,]$max_depth, ", shrinkage=", tuneGrid[i,]$shrinkage, ", minobspernode=", tuneGrid[i,]$minobspernode, ") SL.xgboost(..., ntrees = ntrees, max_depth = max_depth, shrinkage=shrinkage, minobspernode=minobspernode)")), envir = .GlobalEnv)
+  }
+  invisible(TRUE)
+  tuneGrid
+}
+
+
+create_SL_lib = function() {
+  # TODO: don't use global vars here.
+  create.SL.glmnet()
+  glmnet_libs = c("SL.glmnet.0", "SL.glmnet.0.25", "SL.glmnet.0.75", "SL.glmnet.0.5", "SL.glmnet.1")
+  cat("Glmnet:", length(glmnet_libs), "configurations.\n")
+
+  # Create xgboost models.
+
+  # Slow version (used on servers):
+  xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.1, 0.2), minobspernode = c(10))
+
+  # Faster version (used on laptops):
+  if (get_num_cores() < 8) {
+    xgb_tune = list(ntrees = c(1000, 2000), max_depth = c(1, 2), shrinkage = c(0.1, 0.2), minobspernode = c(10))
+  }
+
+  # TODO: don't use global vars here.
+  xgb_grid = create.SL.xgboost(xgb_tune)
+  # Review the grid:
+  # grid
+
+  xgb_libs = c()
+  for (i in 1:nrow(xgb_grid)) {
+    fn_name = paste0("SL.xgb.", i)
+    # assign(fn_name, xgb_fns[[i]])
+    xgb_libs = c(xgb_libs, fn_name)
+  }
+  xgb_libs
+
+  cat("XGBoost:", length(xgb_libs), "configurations.\n")
+
+  # TODO: see if we want to tweak the hyperparameters of any of these models.
+  lib = c("SL.DSA", "SL.polymars", "SL.stepAIC", glmnet_libs, xgb_libs, "SL.earth")
+
+  results = list(lib = lib, xgb_grid = xgb_grid)
+  results
 }
