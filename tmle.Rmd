@@ -57,6 +57,12 @@ result_arrest
 # Compare to a quick OLS regression.
 reg = glm(any_arrest ~ treatment, data=data, family="binomial")
 summary(reg)
+
+# Compare to manual TMLE.
+source("function_library.R")
+load_all_libraries()
+cluster = setup_parallelism()
+result = estimate_effect(Y=data$Y, A=data$treatment, W=W, parallel = "multicore", cluster=cluster)
 ```
 
 ### Violence analysis
