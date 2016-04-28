@@ -3,14 +3,22 @@ load("data/analysis-dataset.RData")
 
 names(data)
 
+data_viol <- data[!is.na(data$any_violence),]
+data_arrest <- data[!is.na(data$any_arrest),]
 
-# Remove outcomes, assignment, and study id from dataset when creating X dataframe.
-X = subset(data, select=-c(treatment, studyid, any_violence))
-names(X)
+X_viol = subset(data_viol, select=-c(treatment, studyid, any_violence, any_arrest))
+X_viol <- X_viol[,1:31]
+names(X_viol)
+
+X_arrest = subset(data_arrest, select=-c(treatment, studyid, any_violence, any_arrest))
+X_arrest <- X_arrest[,1:31]
+names(X_arrest)
 
 # Convert factors to column indicators.
-W = model.matrix(~ . -1 , X)
-colnames(W)
+W_viol = data.frame(model.matrix(~ . -1 , X_viol))
+
+W_arrest = data.frame(model.matrix(~ . -1 , X_arrest))
+
 
 # Can enable this to check for missing data, or run manually.
 if (F) {
@@ -24,33 +32,8 @@ if (F) {
 }
 
 
-### SUPERLEARNER LIBRARY
 
-library(SuperLearner)
-
-SL.DSA <- function(Y, X, newX, family, obsWeights, maxsize = 2*ncol(X), maxorderint = 2, maxsumofpow = 2, Dmove = TRUE, Smove = TRUE, vfold = 5, ...) {
-  require('DSA')
-  dsaweights <- matrix(obsWeights, nrow = (vfold +1), ncol = nrow(X), byrow = TRUE)
-  fit.DSA <- DSA(Y ~ 1, data = data.frame(Y, X), family = family, maxsize = maxsize, maxorderint = maxorderint, maxsumofpow = maxsumofpow, Dmove = Dmove, Smove = Smove, vfold = vfold, weights = dsaweights)
-  pred <- predict(fit.DSA, newdata = newX)
-  if(family$family == "binomial") { pred <- 1 / (1 + exp(-pred))}
-  fit <- list(object = fit.DSA)
-  out <- list(pred = pred, fit = fit)
-  class(out$fit) <- c("SL.DSA")
-  return(out)
-}
-
-# 
-predict.SL.DSA <- function(object, newdata, family, ...) {
-  require('DSA')
-  pred <- predict(object = object$object, newdata = newdata)
-  if(family$family == "binomial"){ pred <- 1 / (1 + exp(-pred))}
-  return(pred)
-}
-
-lib <- c("SL.DSA","SL.polymars","SL.glm","SL.stepAIC","SL.glmnet","SL.earth","SL.bayesglm")
-
-fit <- SuperLearner(Y=data$any_arrest,X=W,family="binomial", SL.library=lib)
+fit <- SuperLearner(Y=data_arrest$any_arrest,X=W_arrest,family="binomial", SL.library=lib)
 
 txt <- W
 control <- W
