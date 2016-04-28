@@ -52,7 +52,7 @@ pred.g1W <- predict(gfit_viol,type='response')[[1]]
 pred.g0W <- 1-pred.g1W
 
 gAW <- c()
-length(gAW) <- nrow(data_arrest)
+length(gAW) <- nrow(data_viol)
 gAW[data_viol$treatment==1] <- pred.g1W[data_viol$treatment==1]
 gAW[data_viol$treatment==0] <- pred.g1W[data_viol$treatment==0]
 
@@ -62,7 +62,7 @@ wt <- 1/gAW
 
 # HT estimator
 
-mean(as.numeric(data_viol$treatment==1)*wt*data_viol$any_arrest)/mean(as.numeric(data_viol$treatment==1)*wt)-mean(as.numeric(data_viol$treatment==0)*wt*data_viol$any_viol)/mean(as.numeric(data_viol$treatment==0)*wt)
+mean(as.numeric(data_viol$treatment==1)*wt*data_viol$any_viol)/mean(as.numeric(data_viol$treatment==1)*wt)-mean(as.numeric(data_viol$treatment==0)*wt*data_viol$any_viol)/mean(as.numeric(data_viol$treatment==0)*wt)
 
-# 
+# -0.1191004
 
