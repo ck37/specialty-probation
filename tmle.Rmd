@@ -47,9 +47,11 @@ if (F) {
 
 ```{r cache=T}
 # Use default SL library for now.
-result_arrest = tmle(Y=data$any_arrest, A=data$treatment, W=W, family="binomial")
+system.time({
+  result_arrest = tmle(Y=data$any_arrest, A=data$treatment, W=W, family="binomial")
+})
 
-# Very significant reducton in arrest rate.
+# Very significant reduction in arrest rate.
 result_arrest
 
 # Compare to a quick OLS regression.
