@@ -136,26 +136,20 @@ estimate_effect = function(Y, A, W,
   # tail(cbind(data$A, QbarAW, Qbar1W, Qbar0W))
 
   psihat_ss = mean(Qbar1W - Qbar0W)
-  psihat_ss
 
-  names(W)
   gHatSL = sl_fn(Y=A, X=W, SL.library=sl_lib, family="binomial")
-  gHatSL
   gHat1W = gHatSL$SL.predict
   gHat0W = 1 - gHat1W
-  summary(gHat1W)
-  summary(gHat0W)
 
   gHatAW = rep(NA, n)
   gHatAW[A == 1] = gHat1W[A == 1]
   gHatAW[A == 0] = gHat0W[A == 0]
 
   psihat_iptw = mean((A == 1)*Y / gHatAW) - mean((A == 0)*Y / gHatAW)
-  psihat_iptw
 
-  #h_aw2 = (A == 1)/gHat1W - (A == 0)/gHat0W
+  h_aw = (A == 1)/gHat1W - (A == 0)/gHat0W
   # Same as?
-  h_aw = (A == 1)/gHatAW - (A == 0)/gHatAW
+  # h_aw = (A == 1)/gHatAW - (A == 0)/gHatAW
   # Yup:
   # mean(h_aw == h_aw2)
 
@@ -165,17 +159,15 @@ estimate_effect = function(Y, A, W,
 
   logitUpdate = glm(Y ~ -1 + offset(qlogis(QbarAW)) + h_aw, family=family)
   eps = coef(logitUpdate)
-  eps
   QbarAW_star = plogis(qlogis(QbarAW) + eps * h_aw)
   Qbar1W_star = plogis(qlogis(Qbar1W) + eps * h_1w)
   Qbar0W_star = plogis(qlogis(Qbar0W) + eps * h_0w)
 
   psihat_tmle = mean(Qbar1W_star - Qbar0W_star)
-  psihat_tmle
 
   # Inference (Lab 6)
 
-  ic = h_aw*(outcome - QbarAW_star) + Qbar1W_star - Qbar0W_star - psihat_tmle
+  ic = h_aw*(Y - QbarAW_star) + Qbar1W_star - Qbar0W_star - psihat_tmle
 
   ic_se = sqrt(sum(var(ic)) / n)
 
@@ -185,17 +177,17 @@ estimate_effect = function(Y, A, W,
   tmle_p = 2 * pnorm(-abs(psihat_tmle / ic_se), lower.tail=T)
 
   # Return the results.
-  results = list(qinit = qinit, ghat = ghatSL, influence_curve = ic,
+  results = list(qinit = qinit, ghat = gHatSL, influence_curve = ic,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
                  psihat_tmle = psihat_tmle,
-                 tmle_se = ci_se, tmle_ci = ci, tmle_p = tmle_p)
+                 tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p)
   class(results) = "tmle"
   results
 }
 
 # Custom result printing.
 # TODO: make prettier.
-tmle.print = function(obj) {
+print.tmle = function(obj) {
   cat("Simple substitution estimate:", obj$psihat_ss, "\n")
   cat("IPTW estimate:", obj$psihat_iptw, "\n")
   cat("TMLE estimate:", obj$psihat_tmle, "\n")
