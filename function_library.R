@@ -187,12 +187,13 @@ estimate_effect = function(Y, A, W,
 
 # Custom result printing.
 # TODO: make prettier.
-print.tmle = function(obj) {
-  cat("Simple substitution estimate:", obj$psihat_ss, "\n")
-  cat("IPTW estimate:", obj$psihat_iptw, "\n")
-  cat("TMLE estimate:", obj$psihat_tmle, "\n")
-  cat("TMLE CI:", paste(obj$tmle_ci), "\n")
-  cat("TMLE p:", obj$tmle_p, "\n")
+print.tmle = function(obj, digits = 4) {
+  cat("Simple substitution estimate:", round(obj$psihat_ss, digits), "\n")
+  cat("IPTW estimate:", round(obj$psihat_iptw, digits), "\n")
+  cat("TMLE estimate:", round(obj$psihat_tmle, digits), "\n")
+  cat("TMLE SE:", paste(round(obj$tmle_se, digits)), "\n")
+  cat("TMLE CI:", paste(round(obj$tmle_ci, digits)), "\n")
+  cat("TMLE p:", round(obj$tmle_p, digits+2), "\n")
 }
 
 # Setup parallel processing, either multinode or multicore.
