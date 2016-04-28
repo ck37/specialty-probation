@@ -22,6 +22,7 @@ names(data)
 # Remove observations with missing data for the outcome.
 data_violence = data[!is.na(data$any_violence), ]
 data_arrest = data[!is.na(data$any_arrest), ]
+rm(data)
 
 # Remove outcomes, assignment, and study id from dataset when creating W dataframe.
 W_violence = subset(data_violence, select=-c(any_arrest, treatment, studyid, any_violence))
@@ -44,6 +45,10 @@ if (F) {
   table(data$any_arrest, useNA="ifany")
 }
 
+source("function_library.R")
+load_all_libraries()
+cluster = setup_parallelism()
+
 ```
 
 ## TMLE
@@ -64,10 +69,9 @@ reg = glm(any_arrest ~ treatment, data=data, family="binomial")
 summary(reg)
 
 # Compare to manual TMLE.
-source("function_library.R")
-load_all_libraries()
-cluster = setup_parallelism()
-result_arrest2 = estimate_effect(Y=data$Y, A=data$treatment, W=W_arrest, parallel = "multicore", cluster=cluster)
+system.time({
+  result_arrest2 = estimate_effect(Y=data$Y, A=data$treatment, W=W_arrest, parallel = "multicore", cluster=cluster)
+})
 result_arrest2
 ```
 
@@ -75,12 +79,17 @@ result_arrest2
 
 ```{r cache=T}
 # Use default SL library for now.
-result_violence = tmle(Y=data$any_violence, A=data$treatment, W=W_violence, family="binomial")
+sl_lib = c("SL.glm", "SL.step", "SL.glm.interaction")
+system.time({
+  result_violence = tmle(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, family="binomial", Q.SL.library = sl_lib, g.SL.library = sl_lib)
+})
 
 # No effect on violence.
 result_violence
 
 # Compare to our own code:
-result_violence2 = estimate_effect(Y=data$any_violence, A=data$treatment, W=W_violence, parallel = "multicore", cluster=cluster)
+system.time({
+  result_violence2 = estimate_effect(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, parallel = "multicore", sl_lib = sl_lib, cluster=cluster)
+})
 result_violence2
 ```
