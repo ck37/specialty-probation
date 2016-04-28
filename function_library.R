@@ -102,7 +102,7 @@ estimate_effect = function(Y, A, W,
        cluster = NULL) {
   # Recreate dataframe based on Y, A, W.
   # TODO: not sure that we even need this.
-  data = data.frame(Y=Y, A=A, W)
+  # data = data.frame(Y=Y, A=A, W)
 
   n = nrow(W)
 
@@ -113,7 +113,7 @@ estimate_effect = function(Y, A, W,
   # x = subset(data, select=-Y)
   # TODO: double-check this.
   x = data.frame(W, A=A)
-  names(x)
+  # names(x)
   x1 = x0 = x
   x1$A = 1
   x0$A = 0
@@ -328,7 +328,7 @@ SL.xgboost = function(Y, X, newX, family, obsWeights, id, ntrees = 1000,
   # TODO: Convert to an xgboost compatible data matrix, using the sample weights.
   #xgmat = xgb.DMatrix(as.matrix(X), label=Y, weight = obsWeights)
   # We are not using sample weights currently:
-  xgmat = xgb.DMatrix(as.matrix(X), label=Y)
+  xgmat = xgb.DMatrix(data=as.matrix(X), label=Y)
 
   # TODO: support early stopping, which requires a watchlist. See ?xgb.train
 
@@ -403,8 +403,8 @@ create_SL_lib = function() {
   # Just do glmnet and xgboost for now.
   lib = c(glmnet_libs, xgb_libs)
   # JUST GLMNET
-  lib = c(glmnet_libs)
-  lib = c(xgb_libs)
+  #lib = c(glmnet_libs)
+  #lib = c(xgb_libs)
 
   results = list(lib = lib, xgb_grid = xgb_grid)
   results
