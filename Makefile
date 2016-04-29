@@ -1,4 +1,4 @@
-data: explore-variables.Rmd
+data: explore-variables.Rmd function_library.R
 	Rscript -e "knitr::knit('explore-variables.Rmd')" > explore-out.Rout 2>&1
 
 analysis:  tmle.Rmd function_library.R
