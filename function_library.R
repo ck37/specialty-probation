@@ -384,7 +384,7 @@ create_SL_lib = function() {
   # Slow version (used on servers):
   #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.1, 0.2), minobspernode = c(10))
   #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
-  xgb_tune = list(ntrees = c(500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
+  xgb_tune = list(ntrees = c(200, 500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
 
   # Faster version (used on laptops):
   # We have so few observations that we can just use the server version.
