@@ -67,10 +67,13 @@ if (F) {
 
 ```{r cache=T}
 system.time({
-  # TODO: how long does this take?
-  result_arrest = tmle(Y=data_arrest$any_arrest, A=data_arrest$treatment,
+  # Hide long output from stepAIC.
+  out = capture.output({
+    # TODO: how long does this take?
+    result_arrest = tmle(Y=data_arrest$any_arrest, A=data_arrest$treatment,
                   W=W_arrest, family="binomial",
                   Q.SL.library = sl_lib, g.SL.library = sl_lib)
+  })
 })
 
 # Very significant reduction in arrest rate.
@@ -97,8 +100,11 @@ result_arrest2$ghat
 ```{r cache=T}
 
 system.time({
-  # Takes about 45 minutes on CK's laptop.
-  result_violence = tmle(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, family="binomial", Q.SL.library = sl_lib, g.SL.library = sl_lib)
+  # Hide long output from stepAIC.
+  out = capture.output({
+    # Takes about 45 minutes on CK's laptop.
+    result_violence = tmle(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, family="binomial", Q.SL.library = sl_lib, g.SL.library = sl_lib)
+  })
 })
 
 # No effect on violence.
