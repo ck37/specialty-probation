@@ -15,6 +15,7 @@ load_all_libraries = function() {
     library(MASS)         # For stepAIC
     library(rpart)        # For rpartPrune
     library(e1071)        # For SVM
+    library(randomForest)
   })
 }
 
@@ -383,53 +384,69 @@ create.SL.xgboost = function(tune = list(ntrees = c(1000), max_depth = c(4), shr
 }
 
 
-create_SL_lib = function(glmnet_size = 6, cols = NULL, detailed_names = F) {
-  # TODO: don't use global vars here.
-  alpha_params = seq(0, 1, length.out=glmnet_size)
-  create.SL.glmnet(alpha = alpha_params)
-  glmnet_libs = paste0("SL.glmnet.", alpha_params)
-  cat("Glmnet:", length(glmnet_libs), "configurations. Alphas:", paste(alpha_params, collapse=", "), "\n")
+create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, glmnet_size = 6, detailed_names = F) {
+
+  glmnet_libs = c()
+  if (glmnet) {
+    # TODO: don't use global vars here.
+    alpha_params = seq(0, 1, length.out=glmnet_size)
+    create.SL.glmnet(alpha = alpha_params)
+    glmnet_libs = paste0("SL.glmnet.", alpha_params)
+    cat("Glmnet:", length(glmnet_libs), "configurations. Alphas:", paste(alpha_params, collapse=", "), "\n")
+  }
 
   # Create xgboost models.
+  xgb_libs = c()
+  xgb_grid = NA
+  if (xgb) {
 
-  # Slow version (used on servers):
-  #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.1, 0.2), minobspernode = c(10))
-  #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
-  xgb_tune = list(ntrees = c(200, 500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
+    # Slow version (used on servers):
+    #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.1, 0.2), minobspernode = c(10))
+    #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
+    xgb_tune = list(ntrees = c(200, 500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
 
-  # Faster version (used on laptops):
-  # We have so few observations that we can just use the server version.
-  if (F & get_num_cores() < 8) {
-    xgb_tune = list(ntrees = c(1000, 2000), max_depth = c(1, 2), shrinkage = c(0.1, 0.2), minobspernode = c(10))
+    # Faster version (used on laptops):
+    # We have so few observations that we can just use the server version.
+    if (F & get_num_cores() < 8) {
+      xgb_tune = list(ntrees = c(1000, 2000), max_depth = c(1, 2), shrinkage = c(0.1, 0.2), minobspernode = c(10))
+    }
+
+    # TODO: don't use global vars here.
+    xgb_results = create.SL.xgboost(xgb_tune, detailed_names = detailed_names)
+    xgb_grid = xgb_results$grid
+    xgb_libs = xgb_results$names
+
+    cat("XGBoost:", length(xgb_libs), "configurations.\n")
+    print(xgb_grid)
   }
 
-  # TODO: don't use global vars here.
-  xgb_results = create.SL.xgboost(xgb_tune, detailed_names = detailed_names)
-  xgb_grid = xgb_results$grid
-  xgb_libs = xgb_results$names
+  rf_libs = c()
+  rf_grid = NA
+  if (rf) {
+    if (!is.null(num_cols)) {
+      # Much better is to send in how many columns are in the dataset.
+      rf_tune = list(mtry = unique(round(exp(log(num_cols)*exp(c(-0.96, -0.71, -0.48, -0.4, -0.29, -0.2))))), nodesize = 1)
+    } else {
+      rf_tune = list(mtry = c(1, 5, 10), nodesize = 1)
+    }
 
-  cat("XGBoost:", length(xgb_libs), "configurations.\n")
-  print(xgb_grid)
+    rf_models = create.SL.randomForest(rf_tune, detailed_names = detailed_names)
 
-  if (!is.null(cols)) {
-    # Much better is to send in how many columns are in the dataset.
-    rf_tune = list(mtry = unique(round(exp(log(cols)*exp(c(-0.96, -0.71, -0.48, -0.4, -0.29, -0.2))))), nodesize = 1)
-  } else {
-    rf_tune = list(mtry = c(1, 5, 10), nodesize = 1)
+    rf_libs = rf_models$names
+    rf_grid = rf_models$grid
+
+    cat("Random Forest:", length(rf_libs), "configurations.\n")
+    print(rf_grid)
   }
-
-  rf_models = create.SL.randomForest(rf_tune, detailed_names = detailed_names)
-
-  rf_libs = rf_models$names
-  rf_grid = rf_models$grid
-
-  cat("Random Forest:", length(rf_libs), "configurations.\n")
-  print(rf_grid)
 
   # TODO: see if we want to tweak the hyperparameters of any of these models.
   # lib = c(glmnet_libs, xgb_libs, "SL.DSA", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
   # DSA currently disabled because it's very slow.
   lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
+
+  if (dsa) {
+    lib = append(lib, "SL.DSA")
+  }
 
   cat("Total models:", length(lib), "\n")
   results = list(lib = lib, xgb_grid = xgb_grid, xgb_libs = xgb_libs,
