@@ -410,7 +410,7 @@ create_SL_lib = function() {
   # lib = c(glmnet_libs, xgb_libs)
   # JUST GLMNET
   #lib = c(glmnet_libs, "SL.DSA")
-  lib = c(glmnet_libs, "SL.polymars", "SL.stepAIC", "SL.earth")
+  lib = c(glmnet_libs, "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
   #lib = c(xgb_libs)
 
   results = list(lib = lib, xgb_grid = xgb_grid)
