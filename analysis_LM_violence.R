@@ -12,6 +12,7 @@ data = data[!is.na(data$any_violence),]
 
 #Data frame X with covariates and exposure
 X = subset(data, select = -c(studyid, any_arrest, any_violence))
+X = data.frame(model.matrix(~ . -1 , X))
 
 #Data frames with A = 1 and A = 0
 X1 = X0 = X
