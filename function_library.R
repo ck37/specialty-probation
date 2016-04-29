@@ -312,7 +312,10 @@ stop_cluster = function(cluster_obj) {
 
 ### From Courtney's create_SL_library.R
 # TODO: adjust configuration so that DSA is not as incredibly slow.
-SL.DSA <- function(Y, X, newX, family, obsWeights, maxsize = 2*ncol(X), maxorderint = 2, maxsumofpow = 2, Dmove = TRUE, Smove = TRUE, vfold = 5, ...) {
+# CK: we are disabling substitution and deletion to try to speed up the algorithm.
+# We are also reducign maxize from 2 * ncol(X) to 0.5 * ncol(X).
+# May also want to add rank.cutoffs.
+SL.DSA <- function(Y, X, newX, family, obsWeights, maxsize = 0.5 * ncol(X), maxorderint = 2, maxsumofpow = 2, Dmove = F, Smove = F, vfold = 5, ...) {
   require('DSA')
   dsaweights <- matrix(obsWeights, nrow = (vfold +1), ncol = nrow(X), byrow = TRUE)
   fit.DSA <- DSA(Y ~ 1, data = data.frame(Y, X), family = family, maxsize = maxsize, maxorderint = maxorderint, maxsumofpow = maxsumofpow, Dmove = Dmove, Smove = Smove, vfold = vfold, weights = dsaweights)
@@ -449,9 +452,11 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
   }
 
   # TODO: see if we want to tweak the hyperparameters of any of these singular models.
-  lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
+  lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.polymars",
+          "SL.stepAIC", "SL.earth", "SL.rpartPrune", "SL.gam")
 
   if (dsa) {
+    # WARNING: super duper slow :/
     lib = append(lib, "SL.DSA")
   }
 
