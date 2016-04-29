@@ -47,7 +47,7 @@ sl_lib
 
 ### Arrest analysis
 
-```{r cache=F}
+```{r cache=T}
 system.time({
   # Hide long output from stepAIC.
   out = capture.output({
@@ -61,9 +61,12 @@ system.time({
 # Very significant reduction in arrest rate.
 result_arrest
 
+```
+
+```{r cache=F}
 # Compare to manual TMLE.
 system.time({
-  # Takes about 5-10 minutes.
+  # Takes about 2-10 minutes.
   result_arrest2 = estimate_effect(Y=data_arrest$any_arrest,
                       A=data_arrest$treatment, W=W_arrest,
                       parallel = "multicore", sl_lib = sl_lib,
@@ -78,7 +81,7 @@ result_arrest2$ghat
 
 ### Violence analysis
 
-```{r cache=F}
+```{r cache=T}
 
 system.time({
   # Hide long output from stepAIC.
@@ -91,9 +94,13 @@ system.time({
 # No effect on violence.
 result_violence
 
+```
+
+```{r cache=F}
+
 # Compare to our own code:
 system.time({
-  # Takes about 5-10 minutes.
+  # Takes about 2-10 minutes.
   result_violence2 = estimate_effect(Y=data_violence$any_violence, 
                           A=data_violence$treatment, W=W_violence,
                           parallel = "multicore", sl_lib = sl_lib,
