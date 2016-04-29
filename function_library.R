@@ -1,12 +1,12 @@
 load_all_libraries = function() {
   # Hide all the extra messages displayed when loading these libraries.
   suppressMessages({
-    library(foreach)      # For multicore
+    library(foreach)      # For parallel looping
     library(doMC)         # For multicore
-    library(doSNOW)       # For multicore
+    library(doSNOW)       # For multinode
     library(RhpcBLASctl)  # Accurate physical core detection
     library(SuperLearner)
-    library(xgboost)      # For GBM, see github for install instructions.
+    library(xgboost)      # For GBM
     library(DSA)          # Install this package from Mark's software webpage
     library(earth)        # For mars
     library(tmle)
@@ -107,26 +107,10 @@ estimate_effect = function(Y, A, W,
        sl_lib = c("SL.glmnet", "SL.step", "SL.glm.interaction"),
        parallel = NULL,
        cluster = NULL) {
-  # Recreate dataframe based on Y, A, W.
-  # TODO: not sure that we even need this.
-  # data = data.frame(Y=Y, A=A, W)
 
-  n = nrow(W)
-
-  # Allow custom # of CV folds.
-  cv_ctrl = SuperLearner.CV.control(V = cv_folds)
-
-  # Create x df without the outcome variable.
-  # x = subset(data, select=-Y)
-  # TODO: double-check this.
-  x = data.frame(W, A=A)
-  x1 = x0 = x
-  x1$A = 1
-  x0$A = 0
-  newdata = rbind(x, x1, x0)
-  dim(newdata)
-
-  # Use parallel SL if we can.
+  ##########
+  # Setup parallel SL if we can.
+  ##########
   if (is.null(parallel)) {
     sl_fn = SuperLearner
   } else if (parallel == "multicore") {
@@ -141,11 +125,28 @@ estimate_effect = function(Y, A, W,
     }
   }
 
+  # Number of observations.
+  n = nrow(W)
+
+  # Allow custom # of CV folds.
+  cv_ctrl = SuperLearner.CV.control(V = cv_folds)
+
+  # Stacked dataframe with A = a, A = 1, and A = 0.
+  x = data.frame(W, A=A)
+  x1 = x0 = x
+  x1$A = 1
+  x0$A = 0
+  newdata = rbind(x, x1, x0)
+
+
   qinit = sl_fn(Y=Y, X=x, newX=newdata, cvControl = cv_ctrl, SL.library=sl_lib, family=family)
   QbarAW = qinit$SL.predict[1:n]
   Qbar1W = qinit$SL.predict[(n+1):(2*n)]
   Qbar0W = qinit$SL.predict[(2*n+1):(3*n)]
-  # tail(cbind(data$A, QbarAW, Qbar1W, Qbar0W))
+
+  #######
+  # Substitution estimator (g-computation).
+  #######
 
   psihat_ss = mean(Qbar1W - Qbar0W)
   cat("Psihat simple substitution:", round(psihat_ss, digits), "\n")
@@ -161,14 +162,17 @@ estimate_effect = function(Y, A, W,
   gHatAW[A == 1] = gHat1W[A == 1]
   gHatAW[A == 0] = gHat0W[A == 0]
 
+  #########
+  # IPTW estimator (not stabilized)
+  #########
   psihat_iptw = mean((A == 1)*Y / gHatAW) - mean((A == 0)*Y / gHatAW)
   cat("Psihat IPTW:", round(psihat_iptw, digits), "\n")
 
-  h_aw = (A == 1)/gHat1W - (A == 0)/gHat0W
-  # Same as?
-  # h_aw = (A == 1)/gHatAW - (A == 0)/gHatAW
-  # Yup:
-  # mean(h_aw == h_aw2)
+  #########
+  # Clever covariate calculations.
+  #########
+  # Set clever covariate to -1/gHatAW or 1/gHatAW
+  h_aw = (2*A - 1)/gHatAW
 
   h_1w = 1/gHat1W
   # Note: make sure to specify -1 here:
@@ -180,18 +184,26 @@ estimate_effect = function(Y, A, W,
   Qbar1W_star = plogis(qlogis(Qbar1W) + eps * h_1w)
   Qbar0W_star = plogis(qlogis(Qbar0W) + eps * h_0w)
 
+  ##########
+  # TMLE estimate
+  ##########
   psihat_tmle = mean(Qbar1W_star - Qbar0W_star)
   cat("Psihat tmle:", round(psihat_tmle, digits), "\n")
 
-  # Inference (Lab 6)
+  ###########
+  # Efficient inference (Lab 6)
+  ###########
 
+  # Calculate inference curve.
   ic = h_aw*(Y - QbarAW_star) + Qbar1W_star - Qbar0W_star - psihat_tmle
 
+  # SE of the influence curve.
   ic_se = sqrt(sum(var(ic)) / n)
 
+  # Confidence interval of the estimate.
   ci = psihat_tmle + c(-1, 1) * ic_se * 1.96
 
-  # 2 * pnorm(psihat_tmle / ic_se, lower.tail=F)
+  # P-value
   tmle_p = 2 * pnorm(-abs(psihat_tmle / ic_se), lower.tail=T)
 
   # Return the results.
@@ -299,7 +311,7 @@ stop_cluster = function(cluster_obj) {
 }
 
 ### From Courtney's create_SL_library.R
-
+# TODO: adjust configuration so that DSA is not as incredibly slow.
 SL.DSA <- function(Y, X, newX, family, obsWeights, maxsize = 2*ncol(X), maxorderint = 2, maxsumofpow = 2, Dmove = TRUE, Smove = TRUE, vfold = 5, ...) {
   require('DSA')
   dsaweights <- matrix(obsWeights, nrow = (vfold +1), ncol = nrow(X), byrow = TRUE)
@@ -346,13 +358,12 @@ SL.xgboost = function(Y, X, newX, family, obsWeights, id, ntrees = 1000,
     model = xgboost(data=xgmat, objective="reg:linear", nround = ntrees, max_depth = max_depth, minchildweight = minobspernode, eta = shrinkage, early.stop.round=early.stop.round, verbose=0, nthread = 1)
   }
   if (family$family == "binomial") {
-    # TODO: test this.
     # We restrict xgboost to 1 thread so that SL can control parallelization.
     model = xgboost(data=xgmat, objective="binary:logistic", nround = ntrees, max_depth = max_depth, minchildweight = minobspernode, eta = shrinkage, early.stop.round = early.stop.round, verbose=0, nthread = 1)
   }
   if (family$family == "multinomial") {
     # TODO: test this.
-    model = xgboost(data=xgmat, objective="multi:softmax", nround = ntrees, max_depth = depth, minchildweight = minobspernode, eta = shrinkage, num_class=length(unique(Y)), early.stop.round = early.stop.round, verbose=0, nthread = 1)
+    model = xgboost(data=xgmat, objective="multi:softmax", nround = ntrees, max_depth = max_depth, minchildweight = minobspernode, eta = shrinkage, num_class=length(unique(Y)), early.stop.round = early.stop.round, verbose=0, nthread = 1)
   }
   pred = predict(model, newdata=data.matrix(newX))
   fit = vector("list", length = 0)
@@ -388,8 +399,8 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
 
   glmnet_libs = c()
   if (glmnet) {
-    # TODO: don't use global vars here.
     alpha_params = seq(0, 1, length.out=glmnet_size)
+    # TODO: don't use global vars here.
     create.SL.glmnet(alpha = alpha_params)
     glmnet_libs = paste0("SL.glmnet.", alpha_params)
     cat("Glmnet:", length(glmnet_libs), "configurations. Alphas:", paste(alpha_params, collapse=", "), "\n")
@@ -400,13 +411,11 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
   xgb_grid = NA
   if (xgb) {
 
-    # Slow version (used on servers):
-    #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.1, 0.2), minobspernode = c(10))
-    #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
+    # Slower, ideal configuration search (intended for servers).
     xgb_tune = list(ntrees = c(200, 500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
 
-    # Faster version (used on laptops):
-    # We have so few observations that we can just use the server version.
+    # Faster, less ideal configuration search (intended for laptops):
+    # BUT disable for now - we have so few observations that we can use the server version.
     if (F & get_num_cores() < 8) {
       xgb_tune = list(ntrees = c(1000, 2000), max_depth = c(1, 2), shrinkage = c(0.1, 0.2), minobspernode = c(10))
     }
@@ -439,9 +448,7 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
     print(rf_grid)
   }
 
-  # TODO: see if we want to tweak the hyperparameters of any of these models.
-  # lib = c(glmnet_libs, xgb_libs, "SL.DSA", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
-  # DSA currently disabled because it's very slow.
+  # TODO: see if we want to tweak the hyperparameters of any of these singular models.
   lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
 
   if (dsa) {
