@@ -2,6 +2,7 @@
 
 ## Install
 
+### DSA
 Mark's DSA package needs to be installed from his website using devtools:
 
 ```{r}
