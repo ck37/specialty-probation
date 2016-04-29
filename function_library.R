@@ -9,6 +9,7 @@ load_all_libraries = function() {
     library(xgboost)      # For GBM, see github for install instructions.
     # library(DSA) # Not working, need to install from Mark's website?
     library(earth)
+    library(tmle)
   })
 }
 

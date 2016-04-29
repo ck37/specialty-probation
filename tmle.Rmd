@@ -5,14 +5,27 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# Don't cache this part:
+source("function_library.R")
+load_all_libraries()
+cluster = setup_parallelism()
+
+# Use default SL library or our final (slow) one?
+if (F) {
+  sl_lib = c("SL.glm", "SL.step", "SL.glm.interaction")
+} else {
+  custom_lib = create_SL_lib()
+  sl_lib = custom_lib$lib
+}
+sl_lib
 ```
 
 ## Data prep
 
 ```{r cache=T}
-suppressMessages({ library(tmle) })
 load("data/analysis-dataset.RData")
-names(data)
+#names(data)
 
 # Handle missing outcome data.
 # We might (arguably) assume that missing data means that no bad thing happened.
@@ -45,18 +58,7 @@ if (F) {
   table(data$any_arrest, useNA="ifany")
 }
 
-source("function_library.R")
-load_all_libraries()
-cluster = setup_parallelism()
 
-# Use default SL library or our final (slow) one?
-if (F) {
-  sl_lib = c("SL.glm", "SL.step", "SL.glm.interaction")
-} else {
-  custom_lib = create_SL_lib()
-  sl_lib = custom_lib$lib
-}
-sl_lib
 ```
 
 ## TMLE
