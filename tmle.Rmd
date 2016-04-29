@@ -68,8 +68,9 @@ if (F) {
 ```{r cache=T}
 system.time({
   # TODO: how long does this take?
-  result_arrest = tmle(Y=data$any_arrest, A=data$treatment, W=W, family="binomial",
-                        Q.SL.library = sl_lib, g.SL.library = sl_lib)
+  result_arrest = tmle(Y=data_arrest$any_arrest, A=data_arrest$treatment,
+                  W=W_arrest, family="binomial",
+                  Q.SL.library = sl_lib, g.SL.library = sl_lib)
 })
 
 # Very significant reduction in arrest rate.
