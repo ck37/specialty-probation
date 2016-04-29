@@ -8,8 +8,11 @@ load_all_libraries = function() {
     library(SuperLearner)
     library(xgboost)      # For GBM, see github for install instructions.
     # library(DSA) # Not working, need to install from Mark's website?
-    library(earth)
+    library(earth)        # For mars
     library(tmle)
+    library(glmnet)       # For ridge/lasso/glm
+    library(polspline)    # For polymars
+    library(MASS)         # For stepAIC
   })
 }
 
