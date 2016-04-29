@@ -16,6 +16,7 @@ load_all_libraries = function() {
     library(rpart)        # For rpartPrune
     library(e1071)        # For SVM
     library(randomForest)
+    library(gam)
   })
 }
 
