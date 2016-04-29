@@ -5,19 +5,15 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
 
-# Don't cache this part:
+```{r}
 source("function_library.R")
 load_all_libraries()
 cluster = setup_parallelism()
 
-# Use default SL library or our final (slow) one?
-if (F) {
-  sl_lib = c("SL.glm", "SL.step", "SL.glm.interaction")
-} else {
-  custom_lib = create_SL_lib()
-  sl_lib = custom_lib$lib
-}
+custom_lib = create_SL_lib()
+sl_lib = custom_lib$lib
 sl_lib
 # Increase to 15 CV folds for estimate_effect()
 cv_folds = 15
@@ -71,7 +67,7 @@ if (F) {
 system.time({
   # Hide long output from stepAIC.
   out = capture.output({
-    # TODO: how long does this take?
+    # Takes about 5 minutes.
     result_arrest = tmle(Y=data_arrest$any_arrest, A=data_arrest$treatment,
                   W=W_arrest, family="binomial",
                   Q.SL.library = sl_lib, g.SL.library = sl_lib)
@@ -82,12 +78,12 @@ system.time({
 result_arrest
 
 # Compare to a quick OLS regression.
-reg = glm(any_arrest ~ treatment, data=data_arrest, family="binomial")
-summary(reg)
+# reg = glm(any_arrest ~ treatment, data=data_arrest, family="binomial")
+# summary(reg)
 
 # Compare to manual TMLE.
 system.time({
-  # Takes about a minute with xgboost + glmnet on 4 cores.
+  # Takes about 5 minutes.
   result_arrest2 = estimate_effect(Y=data_arrest$any_arrest, A=data_arrest$treatment,
                       W=W_arrest, parallel = "multicore", sl_lib = sl_lib,
                       cluster=cluster, cv_folds = cv_folds)
