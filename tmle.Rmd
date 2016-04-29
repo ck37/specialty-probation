@@ -51,7 +51,7 @@ sl_lib
 system.time({
   # Hide long output from stepAIC.
   out = capture.output({
-    # Takes about 5 minutes.
+    # Takes about 5-10 minutes.
     result_arrest = tmle(Y=data_arrest$any_arrest, A=data_arrest$treatment,
                   W=W_arrest, family="binomial",
                   Q.SL.library = sl_lib, g.SL.library = sl_lib)
@@ -63,7 +63,7 @@ result_arrest
 
 # Compare to manual TMLE.
 system.time({
-  # Takes about 5 minutes.
+  # Takes about 5-10 minutes.
   result_arrest2 = estimate_effect(Y=data_arrest$any_arrest,
                       A=data_arrest$treatment, W=W_arrest,
                       parallel = "multicore", sl_lib = sl_lib,
@@ -83,7 +83,7 @@ result_arrest2$ghat
 system.time({
   # Hide long output from stepAIC.
   out = capture.output({
-    # Takes about 45 minutes on CK's laptop.
+    # Takes about 5-10 minutes on CK's laptop.
     result_violence = tmle(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, family="binomial", Q.SL.library = sl_lib, g.SL.library = sl_lib)
   })
 })
@@ -93,7 +93,7 @@ result_violence
 
 # Compare to our own code:
 system.time({
-  # Takes about 5 minutes.
+  # Takes about 5-10 minutes.
   result_violence2 = estimate_effect(Y=data_violence$any_violence, 
                           A=data_violence$treatment, W=W_violence,
                           parallel = "multicore", sl_lib = sl_lib,
