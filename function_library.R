@@ -395,7 +395,7 @@ create.SL.xgboost = function(tune = list(ntrees = c(1000), max_depth = c(4), shr
 }
 
 
-create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, glmnet_size = 6, detailed_names = F) {
+create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, glmnet_size = 11, detailed_names = F) {
 
   glmnet_libs = c()
   if (glmnet) {
@@ -412,7 +412,7 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
   if (xgb) {
 
     # Slower, ideal configuration search (intended for servers).
-    xgb_tune = list(ntrees = c(200, 500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
+    xgb_tune = list(ntrees = c(50, 200, 500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2, 0.4), minobspernode = c(10))
 
     # Faster, less ideal configuration search (intended for laptops):
     # BUT disable for now - we have so few observations that we can use the server version.
