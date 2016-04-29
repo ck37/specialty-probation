@@ -360,24 +360,35 @@ SL.xgboost = function(Y, X, newX, family, obsWeights, id, ntrees = 1000,
   return(out)
 }
 
-create.SL.xgboost = function(tune = list(ntrees = c(1000), max_depth = c(4), shrinkage = c(0.1), minobspernode = c(10))) {
+create.SL.xgboost = function(tune = list(ntrees = c(1000), max_depth = c(4), shrinkage = c(0.1), minobspernode = c(10)), detailed_names = F) {
   # Create all combinations of hyperparameters, for grid-like search.
   tuneGrid = expand.grid(tune, stringsAsFactors=F)
 
+  names = rep("", nrow(tuneGrid))
+
+  name_prefix = "SL.xgb"
   for (i in seq(nrow(tuneGrid))) {
+    g = tuneGrid[i,]
     # TODO: update this to not use the global environment by default.
-    eval(parse(text = paste0("SL.xgb.", i, "= function(..., ntrees = ", tuneGrid[i,]$ntrees, ", max_depth = ", tuneGrid[i,]$max_depth, ", shrinkage=", tuneGrid[i,]$shrinkage, ", minobspernode=", tuneGrid[i,]$minobspernode, ") SL.xgboost(..., ntrees = ntrees, max_depth = max_depth, shrinkage=shrinkage, minobspernode=minobspernode)")), envir = .GlobalEnv)
+    if (detailed_names) {
+      name = paste(name_prefix, g$ntrees, g$max_depth, g$shrinkage, g$minobspernode, sep=".")
+    } else {
+      name = paste(name_prefix, i, sep=".")
+    }
+    names[i] = name
+    eval(parse(text = paste0(name, "= function(..., ntrees = ", g$ntrees, ", max_depth = ", g$max_depth, ", shrinkage=", g$shrinkage, ", minobspernode=", g$minobspernode, ") SL.xgboost(..., ntrees = ntrees, max_depth = max_depth, shrinkage=shrinkage, minobspernode=minobspernode)")), envir = .GlobalEnv)
   }
-  invisible(TRUE)
-  tuneGrid
+  results = list(grid = tuneGrid, names = names)
+  invisible(results)
 }
 
 
-create_SL_lib = function() {
+create_SL_lib = function(glmnet_size = 6, cols = NULL, detailed_names = F) {
   # TODO: don't use global vars here.
-  create.SL.glmnet()
-  glmnet_libs = c("SL.glmnet.0", "SL.glmnet.0.25", "SL.glmnet.0.75", "SL.glmnet.0.5", "SL.glmnet.1")
-  cat("Glmnet:", length(glmnet_libs), "configurations.\n")
+  alpha_params = seq(0, 1, length.out=glmnet_size)
+  create.SL.glmnet(alpha = alpha_params)
+  glmnet_libs = paste0("SL.glmnet.", alpha_params)
+  cat("Glmnet:", length(glmnet_libs), "configurations. Alphas:", paste(alpha_params), "\n")
 
   # Create xgboost models.
 
@@ -393,26 +404,53 @@ create_SL_lib = function() {
   }
 
   # TODO: don't use global vars here.
-  xgb_grid = create.SL.xgboost(xgb_tune)
-  # Review the grid:
-  # grid
-
-  xgb_libs = c()
-  for (i in 1:nrow(xgb_grid)) {
-    fn_name = paste0("SL.xgb.", i)
-    # assign(fn_name, xgb_fns[[i]])
-    xgb_libs = c(xgb_libs, fn_name)
-  }
-  xgb_libs
+  xgb_results = create.SL.xgboost(xgb_tune, detailed_names = detailed_names)
+  xgb_grid = xgb_results$grid
+  xgb_libs = xgb_results$names
 
   cat("XGBoost:", length(xgb_libs), "configurations.\n")
+  print(xgb_grid)
+
+  if (!is.null(cols)) {
+    # Much better is to send in how many columns are in the dataset.
+    rf_tune = list(mtry = unique(round(exp(log(cols)*exp(c(-0.96, -0.71, -0.48, -0.4, -0.29, -0.2))))), nodesize = 1)
+  } else {
+    rf_tune = list(mtry = c(1, 5, 10), nodesize = 1)
+  }
+
+  rf_models = create.SL.randomForest(rf_tune, detailed_names = detailed_names)
+
+  rf_libs = rf_models$names
+  rf_grid = rf_models$grid
+
+  cat("Random Forest:", length(rf_libs), "configurations.\n")
+  print(rf_grid)
 
   # TODO: see if we want to tweak the hyperparameters of any of these models.
   # lib = c(glmnet_libs, xgb_libs, "SL.DSA", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
   # DSA currently disabled because it's very slow.
-  lib = c(glmnet_libs, xgb_libs, "SL.svm", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
+  lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
 
+  cat("Total models:", length(lib), "\n")
   results = list(lib = lib, xgb_grid = xgb_grid, xgb_libs = xgb_libs,
-                 glmnet_libs = glmnet_libs)
+                 glmnet_libs = glmnet_libs, rf_grid = rf_grid, rf_libs = rf_libs)
   results
+}
+
+create.SL.randomForest <- function(tune = list(mtry = c(1, 5, 10), nodesize = c(1, 5, 10)), detailed_names = F) {
+  tuneGrid <- expand.grid(tune, stringsAsFactors = FALSE)
+  names = rep("", nrow(tuneGrid))
+  name_prefix = "SL.rf"
+  for (mm in seq(nrow(tuneGrid))) {
+    g = tuneGrid[mm,]
+    if (detailed_names) {
+      name = paste(name_prefix, tuneGrid[mm, 1], tuneGrid[mm, 2], sep=".")
+    } else {
+      name = paste(name_prefix, mm, sep=".")
+    }
+    names[mm] = name
+    eval(parse(file = "", text = paste0(name, "<- function(..., mtry = ", g$mtry, ", nodesize = ", g$nodesize, ") SL.randomForest(..., mtry = mtry, nodesize = nodesize)")), envir = .GlobalEnv)
+  }
+  results = list(grid = tuneGrid, names = names)
+  invisible(results)
 }
