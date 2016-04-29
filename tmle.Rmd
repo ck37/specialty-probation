@@ -93,7 +93,7 @@ result_violence
 
 # Compare to our own code:
 system.time({
-  # TODO: how long does this take?
+  # Takes about 5 minutes.
   result_violence2 = estimate_effect(Y=data_violence$any_violence, 
                           A=data_violence$treatment, W=W_violence,
                           parallel = "multicore", sl_lib = sl_lib,
