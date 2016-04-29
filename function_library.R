@@ -14,6 +14,7 @@ load_all_libraries = function() {
     library(polspline)    # For polymars
     library(MASS)         # For stepAIC
     library(rpart)        # For rpartPrune
+    library(e1071)        # For SVM
   })
 }
 
@@ -382,7 +383,8 @@ create_SL_lib = function() {
 
   # Slow version (used on servers):
   #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.1, 0.2), minobspernode = c(10))
-  xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
+  #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
+  xgb_tune = list(ntrees = c(500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
 
   # Faster version (used on laptops):
   # We have so few observations that we can just use the server version.
@@ -406,9 +408,9 @@ create_SL_lib = function() {
   cat("XGBoost:", length(xgb_libs), "configurations.\n")
 
   # TODO: see if we want to tweak the hyperparameters of any of these models.
-  # TODO: re-enable DSA once I can install the library.
   # lib = c(glmnet_libs, xgb_libs, "SL.DSA", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
-  lib = c(glmnet_libs, xgb_libs, "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
+  # DSA currently disabled because it's very slow.
+  lib = c(glmnet_libs, xgb_libs, "SL.svm", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
 
   results = list(lib = lib, xgb_grid = xgb_grid, xgb_libs = xgb_libs,
                  glmnet_libs = glmnet_libs)
