@@ -20,12 +20,6 @@ cv_folds = 15
 
 ```{r cache=T}
 load("data/analysis-dataset.RData")
-#names(data)
-
-# Handle missing outcome data.
-# We might (arguably) assume that missing data means that no bad thing happened.
-# There is probably some fancy missing data approach to use.
-# data$any_arrest[is.na(data$any_arrest)] = 0
 
 # Remove observations with missing data for the outcome.
 data_violence = data[!is.na(data$any_violence), ]
@@ -35,7 +29,6 @@ rm(data)
 # Remove outcomes, assignment, and study id from dataset when creating W dataframe.
 W_violence = subset(data_violence, select=-c(any_arrest, treatment, studyid, any_violence))
 W_arrest = subset(data_arrest, select=-c(any_arrest, treatment, studyid, any_violence))
-# names(X)
 
 # Convert factors to column indicators.
 W_violence = data.frame(model.matrix(~ . -1 , W_violence))
@@ -44,7 +37,8 @@ W_arrest = data.frame(model.matrix(~ . -1 , W_arrest))
 ```
 
 ```{r}
-custom_lib = create_SL_lib(cols = ncol(W_arrest), detailed_names = T)
+# Set dsa=T to re-enable DSA, but it will slow down the modeling significantly.
+custom_lib = create_SL_lib(num_cols = ncol(W_arrest), detailed_names = T)
 sl_lib = custom_lib$lib
 sl_lib
 ```
@@ -67,15 +61,12 @@ system.time({
 # Very significant reduction in arrest rate.
 result_arrest
 
-# Compare to a quick OLS regression.
-# reg = glm(any_arrest ~ treatment, data=data_arrest, family="binomial")
-# summary(reg)
-
 # Compare to manual TMLE.
 system.time({
   # Takes about 5 minutes.
-  result_arrest2 = estimate_effect(Y=data_arrest$any_arrest, A=data_arrest$treatment,
-                      W=W_arrest, parallel = "multicore", sl_lib = sl_lib,
+  result_arrest2 = estimate_effect(Y=data_arrest$any_arrest,
+                      A=data_arrest$treatment, W=W_arrest,
+                      parallel = "multicore", sl_lib = sl_lib,
                       cluster=cluster, cv_folds = cv_folds)
 })
 result_arrest2
