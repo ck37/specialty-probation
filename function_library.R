@@ -388,7 +388,7 @@ create_SL_lib = function(glmnet_size = 6, cols = NULL, detailed_names = F) {
   alpha_params = seq(0, 1, length.out=glmnet_size)
   create.SL.glmnet(alpha = alpha_params)
   glmnet_libs = paste0("SL.glmnet.", alpha_params)
-  cat("Glmnet:", length(glmnet_libs), "configurations. Alphas:", paste(alpha_params), "\n")
+  cat("Glmnet:", length(glmnet_libs), "configurations. Alphas:", paste(alpha_params, collapse=", "), "\n")
 
   # Create xgboost models.
 
