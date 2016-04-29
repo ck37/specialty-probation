@@ -12,9 +12,6 @@ source("function_library.R")
 load_all_libraries()
 cluster = setup_parallelism()
 
-custom_lib = create_SL_lib()
-sl_lib = custom_lib$lib
-sl_lib
 # Increase to 15 CV folds for estimate_effect()
 cv_folds = 15
 ```
@@ -44,19 +41,12 @@ W_arrest = subset(data_arrest, select=-c(any_arrest, treatment, studyid, any_vio
 W_violence = data.frame(model.matrix(~ . -1 , W_violence))
 W_arrest = data.frame(model.matrix(~ . -1 , W_arrest))
 
-# Can enable this to check for missing data, or run manually.
-if (F) {
-  # Review missing data in W.
-  apply(W_violence, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
-  apply(W_arrest, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
+```
 
-  # Review missing data in our treatment indicator.
-  table(data$treatment, useNA="ifany")
-  # Review missing data in our outcome indicator.
-  table(data$any_arrest, useNA="ifany")
-}
-
-
+```{r}
+custom_lib = create_SL_lib(cols = ncol(W_arrest), detailed_names = T)
+sl_lib = custom_lib$lib
+sl_lib
 ```
 
 ## TMLE
