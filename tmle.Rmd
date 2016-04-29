@@ -19,6 +19,8 @@ if (F) {
   sl_lib = custom_lib$lib
 }
 sl_lib
+# Increase to 15 CV folds for estimate_effect()
+cv_folds = 15
 ```
 
 ## Data prep
@@ -65,7 +67,7 @@ if (F) {
 
 ### Arrest analysis
 
-```{r cache=T}
+```{r cache=F}
 system.time({
   # Hide long output from stepAIC.
   out = capture.output({
@@ -86,7 +88,9 @@ summary(reg)
 # Compare to manual TMLE.
 system.time({
   # Takes about a minute with xgboost + glmnet on 4 cores.
-  result_arrest2 = estimate_effect(Y=data_arrest$any_arrest, A=data_arrest$treatment, W=W_arrest, parallel = "multicore", sl_lib = sl_lib, cluster=cluster)
+  result_arrest2 = estimate_effect(Y=data_arrest$any_arrest, A=data_arrest$treatment,
+                      W=W_arrest, parallel = "multicore", sl_lib = sl_lib,
+                      cluster=cluster, cv_folds = cv_folds)
 })
 result_arrest2
 
@@ -97,7 +101,7 @@ result_arrest2$ghat
 
 ### Violence analysis
 
-```{r cache=T}
+```{r cache=F}
 
 system.time({
   # Hide long output from stepAIC.
@@ -113,7 +117,10 @@ result_violence
 # Compare to our own code:
 system.time({
   # TODO: how long does this take?
-  result_violence2 = estimate_effect(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, parallel = "multicore", sl_lib = sl_lib, cluster=cluster)
+  result_violence2 = estimate_effect(Y=data_violence$any_violence, 
+                          A=data_violence$treatment, W=W_violence,
+                          parallel = "multicore", sl_lib = sl_lib,
+                          cv_folds = cv_folds, cluster=cluster)
 })
 result_violence2
 
