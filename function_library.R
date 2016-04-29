@@ -106,23 +106,37 @@ Mode = function(x) {
 estimate_effect = function(Y, A, W,
        family = "binomial", cv_folds = 10, digits = 5,
        sl_lib = c("SL.glmnet", "SL.step", "SL.glm.interaction"),
-       parallel = NULL,
-       cluster = NULL) {
+       parallel = NULL, cluster = NULL, crossvalidate = F, outer_cv_folds = 20) {
 
   ##########
   # Setup parallel SL if we can.
   ##########
   if (is.null(parallel)) {
     sl_fn = SuperLearner
+    if (crossvalidate) {
+      cv_sl_fn = function(...) {
+        CV.SuperLearner(..., V = outer_cv_folds)
+      }
+    }
   } else if (parallel == "multicore") {
     cat("Running SL via multicore\n")
     sl_fn = function(...) {
       mcSuperLearner(...)
     }
+    if (crossvalidate) {
+      cv_sl_fn = function(...) {
+        CV.SuperLearner(..., V = outer_cv_folds, parallel = parallel)
+      }
+    }
   } else if (parallel == "snow") {
     cat("Running SL via snow\n")
     sl_fn = function(...) {
       snowSuperLearner(cluster, ...)
+    }
+    if (crossvalidate) {
+      cv_sl_fn = function(...) {
+        CV.SuperLearner(..., V = outer_cv_folds, parallel = cluster)
+      }
     }
   }
 
@@ -145,6 +159,11 @@ estimate_effect = function(Y, A, W,
   Qbar1W = qinit$SL.predict[(n+1):(2*n)]
   Qbar0W = qinit$SL.predict[(2*n+1):(3*n)]
 
+  if (crossvalidate) {
+    # No newdata argument in this call.
+    qinit_cv = cv_sl_fn(Y=Y, X=x, cvControl = cv_ctrl, SL.library=sl_lib, family=family)
+  }
+
   #######
   # Substitution estimator (g-computation).
   #######
@@ -162,6 +181,10 @@ estimate_effect = function(Y, A, W,
   gHatAW = rep(NA, n)
   gHatAW[A == 1] = gHat1W[A == 1]
   gHatAW[A == 0] = gHat0W[A == 0]
+
+  if (crossvalidate) {
+    gHatSL_cv = cv_sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl, family="binomial")
+  }
 
   #########
   # IPTW estimator (not stabilized)
@@ -212,6 +235,9 @@ estimate_effect = function(Y, A, W,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
                  psihat_tmle = psihat_tmle,
                  tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p)
+  if (crossvalidate) {
+    results = c(results, list(qinit_cv = qinit_cv, ghat_cv = gHatSL_cv))
+  }
   class(results) = "estimate_effect"
   results
 }
