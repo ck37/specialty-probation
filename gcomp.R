@@ -1,16 +1,25 @@
+lib <- c("SL.DSA","SL.polymars","SL.stepAIC","SL.glmnet.0","SL.glmnet.0.25","SL.glmnet.0.75","SL.glmnet.0.5","SL.glmnet.1","SL.earth")
 
 load("data/analysis-dataset.RData")
 
 names(data)
 
+data_viol <- data[!is.na(data$any_violence),]
+data_arrest <- data[!is.na(data$any_arrest),]
 
-# Remove outcomes, assignment, and study id from dataset when creating X dataframe.
-X = subset(data, select=-c(treatment, studyid, any_violence))
-names(X)
+X_viol = subset(data_viol, select=-c(studyid, any_violence, any_arrest))
+X_viol <- X_viol[,1:31]
+names(X_viol)
+
+X_arrest = subset(data_arrest, select=-c(studyid, any_violence, any_arrest))
+X_arrest <- X_arrest[,1:31]
+names(X_arrest)
 
 # Convert factors to column indicators.
-W = model.matrix(~ . -1 , X)
-colnames(W)
+W_viol = data.frame(model.matrix(~ . -1 , X_viol))
+
+W_arrest = data.frame(model.matrix(~ . -1 , X_arrest))
+
 
 # Can enable this to check for missing data, or run manually.
 if (F) {
@@ -24,41 +33,33 @@ if (F) {
 }
 
 
-### SUPERLEARNER LIBRARY
 
-library(SuperLearner)
+fit <- SuperLearner(Y=data_arrest$any_arrest,X=W_arrest,family="binomial", SL.library=lib)
 
-SL.DSA <- function(Y, X, newX, family, obsWeights, maxsize = 2*ncol(X), maxorderint = 2, maxsumofpow = 2, Dmove = TRUE, Smove = TRUE, vfold = 5, ...) {
-  require('DSA')
-  dsaweights <- matrix(obsWeights, nrow = (vfold +1), ncol = nrow(X), byrow = TRUE)
-  fit.DSA <- DSA(Y ~ 1, data = data.frame(Y, X), family = family, maxsize = maxsize, maxorderint = maxorderint, maxsumofpow = maxsumofpow, Dmove = Dmove, Smove = Smove, vfold = vfold, weights = dsaweights)
-  pred <- predict(fit.DSA, newdata = newX)
-  if(family$family == "binomial") { pred <- 1 / (1 + exp(-pred))}
-  fit <- list(object = fit.DSA)
-  out <- list(pred = pred, fit = fit)
-  class(out$fit) <- c("SL.DSA")
-  return(out)
-}
+txt <- W_arrest
+control <- W_arrest
+txt$treatment <- 1
+control$treatment <- 0
 
-# 
-predict.SL.DSA <- function(object, newdata, family, ...) {
-  require('DSA')
-  pred <- predict(object = object$object, newdata = newdata)
-  if(family$family == "binomial"){ pred <- 1 / (1 + exp(-pred))}
-  return(pred)
-}
-
-lib <- c("SL.DSA","SL.polymars","SL.glm","SL.stepAIC","SL.glmnet","SL.earth","SL.bayesglm")
-
-fit <- SuperLearner(Y=data$any_arrest,X=W,family="binomial", SL.library=lib)
-
-txt <- W
-control <- W
-txt$any_arrest==1
-control$any_arrest==0
-
-preds1 <- predict(fit,type='response',newdata=txt)
-preds0 <- predict(fit,type='response',newdata=control)
+preds1 <- predict(fit,type='response',newdata=txt)[[1]]
+preds0 <- predict(fit,type='response',newdata=control)[[1]]
 
 mean(preds1-preds0)
+
+# -0.141365
+
+
+fit.viol <- SuperLearner(Y=data_viol$any_viol,X=W_viol,family="binomial", SL.library=lib)
+
+txt <- W_viol
+control <- W_viol
+txt$treatment <- 1
+control$treatment <- 0
+
+preds1 <- predict(fit.viol,type='response',newdata=txt)[[1]]
+preds0 <- predict(fit.viol,type='response',newdata=control)[[1]]
+
+mean(preds1-preds0)
+
+# -0.006305265
 

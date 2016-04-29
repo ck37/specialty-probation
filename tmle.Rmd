@@ -7,80 +7,108 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+source("function_library.R")
+load_all_libraries()
+cluster = setup_parallelism()
+
+# Increase to 15 CV folds for estimate_effect()
+cv_folds = 15
+```
+
 ## Data prep
 
 ```{r cache=T}
-suppressMessages({ library(tmle) })
 load("data/analysis-dataset.RData")
-names(data)
-
-# Handle missing outcome data.
-# We might (arguably) assume that missing data means that no bad thing happened.
-# There is probably some fancy missing data approach to use.
-# data$any_arrest[is.na(data$any_arrest)] = 0
 
 # Remove observations with missing data for the outcome.
 data_violence = data[!is.na(data$any_violence), ]
 data_arrest = data[!is.na(data$any_arrest), ]
+rm(data)
 
 # Remove outcomes, assignment, and study id from dataset when creating W dataframe.
 W_violence = subset(data_violence, select=-c(any_arrest, treatment, studyid, any_violence))
 W_arrest = subset(data_arrest, select=-c(any_arrest, treatment, studyid, any_violence))
-# names(X)
 
 # Convert factors to column indicators.
 W_violence = data.frame(model.matrix(~ . -1 , W_violence))
 W_arrest = data.frame(model.matrix(~ . -1 , W_arrest))
 
-# Can enable this to check for missing data, or run manually.
-if (F) {
-  # Review missing data in W.
-  apply(W_violence, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
-  apply(W_arrest, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
+```
 
-  # Review missing data in our treatment indicator.
-  table(data$treatment, useNA="ifany")
-  # Review missing data in our outcome indicator.
-  table(data$any_arrest, useNA="ifany")
-}
-
+```{r}
+# Set dsa=T to re-enable DSA, but it will slow down the modeling significantly.
+custom_lib = create_SL_lib(num_cols = ncol(W_arrest), detailed_names = T)
+sl_lib = custom_lib$lib
+sl_lib
 ```
 
 ## TMLE
 
 ### Arrest analysis
 
-```{r cache=T}
-# Use default SL library for now.
+```{r cache=F}
 system.time({
-  result_arrest = tmle(Y=data$any_arrest, A=data$treatment, W=W, family="binomial")
+  # Hide long output from stepAIC.
+  out = capture.output({
+    # Takes about 5-10 minutes.
+    result_arrest = tmle(Y=data_arrest$any_arrest, A=data_arrest$treatment,
+                  W=W_arrest, family="binomial",
+                  Q.SL.library = sl_lib, g.SL.library = sl_lib)
+  })
 })
 
 # Very significant reduction in arrest rate.
 result_arrest
 
-# Compare to a quick OLS regression.
-reg = glm(any_arrest ~ treatment, data=data, family="binomial")
-summary(reg)
-
 # Compare to manual TMLE.
-source("function_library.R")
-load_all_libraries()
-cluster = setup_parallelism()
-result_arrest2 = estimate_effect(Y=data$Y, A=data$treatment, W=W_arrest, parallel = "multicore", cluster=cluster)
+system.time({
+  # Takes about 5-10 minutes.
+  result_arrest2 = estimate_effect(Y=data_arrest$any_arrest,
+                      A=data_arrest$treatment, W=W_arrest,
+                      parallel = "multicore", sl_lib = sl_lib,
+                      cluster=cluster, cv_folds = cv_folds)
+})
 result_arrest2
+
+# Review SL weights
+result_arrest2$qinit
+result_arrest2$ghat
 ```
 
 ### Violence analysis
 
-```{r cache=T}
-# Use default SL library for now.
-result_violence = tmle(Y=data$any_violence, A=data$treatment, W=W_violence, family="binomial")
+```{r cache=F}
+
+system.time({
+  # Hide long output from stepAIC.
+  out = capture.output({
+    # Takes about 5-10 minutes on CK's laptop.
+    result_violence = tmle(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, family="binomial", Q.SL.library = sl_lib, g.SL.library = sl_lib)
+  })
+})
 
 # No effect on violence.
 result_violence
 
 # Compare to our own code:
-result_violence2 = estimate_effect(Y=data$any_violence, A=data$treatment, W=W_violence, parallel = "multicore", cluster=cluster)
+system.time({
+  # Takes about 5-10 minutes.
+  result_violence2 = estimate_effect(Y=data_violence$any_violence, 
+                          A=data_violence$treatment, W=W_violence,
+                          parallel = "multicore", sl_lib = sl_lib,
+                          cv_folds = cv_folds, cluster=cluster)
+})
 result_violence2
+
+# Review SL weights.
+result_violence2$qinit
+result_violence2$ghat
+
+```
+
+```{r}
+# Save our results since they took a long time to compute.
+save(result_arrest, result_arrest2, result_violence, result_violence2,
+     file="data/tmle-results.RData")
 ```

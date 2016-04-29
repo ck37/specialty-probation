@@ -214,6 +214,8 @@ sum(arrest$any_arrest == 99)
 arrest$any_arrest[arrest$any_arrest == 99] = NA
 table(arrest$any_arrest, useNA="ifany")
 
+arrest$any_arrest = as.numeric(arrest$any_arrest)
+
 # Convert site from "labelled" to numeric so that it can be merged on.
 arrest$site = as.numeric(arrest$site)
 
