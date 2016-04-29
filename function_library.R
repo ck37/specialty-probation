@@ -7,7 +7,7 @@ load_all_libraries = function() {
     library(RhpcBLASctl)  # Accurate physical core detection
     library(SuperLearner)
     library(xgboost)      # For GBM, see github for install instructions.
-    # library(DSA) # Not working, need to install from Mark's website?
+    library(DSA)          # Install this package from Mark's software webpage
     library(earth)        # For mars
     library(tmle)
     library(glmnet)       # For ridge/lasso/glm
@@ -117,7 +117,6 @@ estimate_effect = function(Y, A, W,
   # x = subset(data, select=-Y)
   # TODO: double-check this.
   x = data.frame(W, A=A)
-  # names(x)
   x1 = x0 = x
   x1$A = 1
   x0$A = 0
@@ -147,6 +146,9 @@ estimate_effect = function(Y, A, W,
 
   psihat_ss = mean(Qbar1W - Qbar0W)
   cat("Psihat simple substitution:", round(psihat_ss, digits), "\n")
+
+  # Stop early if psihat_ss is NA.
+  stopifnot(!is.na(psihat_ss))
 
   gHatSL = sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl, family="binomial")
   gHat1W = gHatSL$SL.predict
@@ -194,13 +196,13 @@ estimate_effect = function(Y, A, W,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
                  psihat_tmle = psihat_tmle,
                  tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p)
-  class(results) = "tmle242"
+  class(results) = "estimate_effect"
   results
 }
 
 # Custom result printing.
 # TODO: make prettier.
-print.tmle242 = function(obj, digits = 4) {
+print.estimate_effect = function(obj, digits = 4) {
   cat("Simple substitution estimate:", round(obj$psihat_ss, digits), "\n")
   cat("IPTW estimate:", round(obj$psihat_iptw, digits), "\n")
   cat("TMLE estimate:", round(obj$psihat_tmle, digits), "\n")
@@ -405,9 +407,10 @@ create_SL_lib = function() {
   # TODO: re-enable DSA once I can install the library.
   lib = c("SL.polymars", "SL.stepAIC", glmnet_libs, xgb_libs, "SL.earth")
   # Just do glmnet and xgboost for now.
-  lib = c(glmnet_libs, xgb_libs)
+  # lib = c(glmnet_libs, xgb_libs)
   # JUST GLMNET
-  #lib = c(glmnet_libs)
+  #lib = c(glmnet_libs, "SL.DSA")
+  lib = c(glmnet_libs, "SL.polymars", "SL.stepAIC", "SL.earth")
   #lib = c(xgb_libs)
 
   results = list(lib = lib, xgb_grid = xgb_grid)
