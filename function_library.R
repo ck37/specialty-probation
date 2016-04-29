@@ -13,6 +13,7 @@ load_all_libraries = function() {
     library(glmnet)       # For ridge/lasso/glm
     library(polspline)    # For polymars
     library(MASS)         # For stepAIC
+    library(rpart)        # For rpartPrune
   })
 }
 
@@ -345,7 +346,7 @@ SL.xgboost = function(Y, X, newX, family, obsWeights, id, ntrees = 1000,
   if (family$family == "binomial") {
     # TODO: test this.
     # We restrict xgboost to 1 thread so that SL can control parallelization.
-    model = xgboost(data=xgmat, objective="binary:logistic", nround = ntrees, max_depth = depth, minchildweight = minobspernode, eta = shrinkage, early.stop.round = early.stop.round, verbose=0, nthread = 1)
+    model = xgboost(data=xgmat, objective="binary:logistic", nround = ntrees, max_depth = max_depth, minchildweight = minobspernode, eta = shrinkage, early.stop.round = early.stop.round, verbose=0, nthread = 1)
   }
   if (family$family == "multinomial") {
     # TODO: test this.
@@ -380,10 +381,12 @@ create_SL_lib = function() {
   # Create xgboost models.
 
   # Slow version (used on servers):
-  xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.1, 0.2), minobspernode = c(10))
+  #xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.1, 0.2), minobspernode = c(10))
+  xgb_tune = list(ntrees = c(1000, 2000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2), minobspernode = c(10))
 
   # Faster version (used on laptops):
-  if (get_num_cores() < 8) {
+  # We have so few observations that we can just use the server version.
+  if (F & get_num_cores() < 8) {
     xgb_tune = list(ntrees = c(1000, 2000), max_depth = c(1, 2), shrinkage = c(0.1, 0.2), minobspernode = c(10))
   }
 
@@ -403,16 +406,11 @@ create_SL_lib = function() {
   cat("XGBoost:", length(xgb_libs), "configurations.\n")
 
   # TODO: see if we want to tweak the hyperparameters of any of these models.
-  #lib = c("SL.DSA", "SL.polymars", "SL.stepAIC", glmnet_libs, xgb_libs, "SL.earth")
   # TODO: re-enable DSA once I can install the library.
-  lib = c("SL.polymars", "SL.stepAIC", glmnet_libs, xgb_libs, "SL.earth")
-  # Just do glmnet and xgboost for now.
-  # lib = c(glmnet_libs, xgb_libs)
-  # JUST GLMNET
-  #lib = c(glmnet_libs, "SL.DSA")
-  lib = c(glmnet_libs, "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
-  #lib = c(xgb_libs)
+  # lib = c(glmnet_libs, xgb_libs, "SL.DSA", "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
+  lib = c(glmnet_libs, xgb_libs, "SL.polymars", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
 
-  results = list(lib = lib, xgb_grid = xgb_grid)
+  results = list(lib = lib, xgb_grid = xgb_grid, xgb_libs = xgb_libs,
+                 glmnet_libs = glmnet_libs)
   results
 }
