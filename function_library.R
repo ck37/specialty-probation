@@ -186,7 +186,7 @@ estimate_effect = function(Y, A, W,
 
   ic_se = sqrt(sum(var(ic)) / n)
 
-  ci = psihat_tmle + c(-1, 1) * ic_se
+  ci = psihat_tmle + c(-1, 1) * ic_se * 1.96
 
   # 2 * pnorm(psihat_tmle / ic_se, lower.tail=F)
   tmle_p = 2 * pnorm(-abs(psihat_tmle / ic_se), lower.tail=T)
