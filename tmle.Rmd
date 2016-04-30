@@ -64,8 +64,10 @@ result_arrest
 save(result_arrest, file="data/tmle-arrest.RData")
 ```
 
-```{r cache=F}
+```{r cache=T}
 # Compare to manual TMLE.
+
+set.seed(1)
 system.time({
   # Takes about 2-10 minutes.
   result_arrest2 = estimate_effect(Y=data_arrest$any_arrest,
@@ -101,8 +103,8 @@ save(result_violence, file="data/tmle-violence.RData")
 
 ```
 
-```{r cache=F}
-
+```{r cache=T}
+set.seed(1)
 # Compare to our own code:
 system.time({
   # Takes about 2-10 minutes.
@@ -110,7 +112,7 @@ system.time({
                           A=data_violence$treatment, W=W_violence,
                           parallel = "multicore", sl_lib = sl_lib,
                           cv_folds = cv_folds, cluster=cluster,
-      	  	  						crossvalidate=F, outer_cv_folds = 5)
+      	  	  						crossvalidate=T, outer_cv_folds = 5)
 })
 result_violence2
 
@@ -120,13 +122,13 @@ result_violence2$ghat
 
 if ("qinit_cv" %in% names(result_violence2)) {
 	# Review outer cross-validation results.
-	summary(result_violence2$qinit_cv)
-	wgts = cvSL_review_weights(result_violence$qinit_cv)
-	print(wgts, type = "html")
+	print(summary(result_violence2$qinit_cv))
+	wgts = cvSL_review_weights(result_violence2$qinit_cv)
+	print(xtable(wgts), type = "html")
 
-	summary(result_violence2$ghat_cv)
-	wgts = cvSL_review_weights(result_violence$ghat_cv)
-	print(wgts, type = "html")
+	print(summary(result_violence2$ghat_cv))
+	wgts = cvSL_review_weights(result_violence2$ghat_cv)
+	print(xtable(wgts), type = "html")
 
 }
 save(result_violence2, file="data/tmle-violence2.RData")
