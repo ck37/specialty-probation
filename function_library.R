@@ -17,6 +17,7 @@ load_all_libraries = function() {
     library(e1071)        # For SVM
     library(randomForest)
     library(gam)
+    library(xtable)
   })
 }
 
@@ -106,7 +107,7 @@ Mode = function(x) {
 estimate_effect = function(Y, A, W,
        family = "binomial", cv_folds = 10, digits = 5,
        sl_lib = c("SL.glmnet", "SL.step", "SL.glm.interaction"),
-       parallel = NULL, cluster = NULL, crossvalidate = F, outer_cv_folds = 20) {
+       parallel = NULL, cluster = NULL, crossvalidate = F, outer_cv_folds = 10) {
 
   ##########
   # Setup parallel SL if we can.
@@ -509,4 +510,16 @@ create.SL.randomForest <- function(tune = list(mtry = c(1, 5, 10), nodesize = c(
   }
   results = list(grid = tuneGrid, names = names)
   invisible(results)
+}
+
+# Review meta-weights from a CV.SuperLearner
+cvSL_review_weights = function(cv_sl) {
+  meta_weights = coef(cv_sl)
+  means = colMeans(meta_weights)
+  sds = apply(meta_weights, MARGIN=2, FUN=function(col) { sd(col) })
+  mins = apply(meta_weights, MARGIN=2, FUN=function(col) { min(col) })
+  maxs = apply(meta_weights, MARGIN=2, FUN=function(col) { max(col) })
+# Combine the stats into a single matrix.
+  sl_stats = cbind("mean(weight)"=means, "sd(weight)"=sds, "min(weight)"=mins, "max(weight)"=maxs)
+  sl_stats
 }
