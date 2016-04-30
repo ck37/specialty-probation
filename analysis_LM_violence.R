@@ -1,7 +1,4 @@
 #VIOLENCE!!!!
-library("SuperLearner")
-library("tmle")
-
 load("data/analysis-dataset.RData")
 load("data/covariates.RData")
 
@@ -72,13 +69,14 @@ PsiHat.TMLE = mean(Qbar1W.star) - mean(Qbar0W.star)
 PsiHat.TMLE2 = tmle(Y=data$any_violence, A=data$treatment, W=W, Q=cbind(Qbar0W, Qbar1W), g1W=gHat1W, family="binomial")
 PsiHat.TMLE2$estimates$ATE
 
-B = 500
-estimates = data.frame(matrix(NA, nrow = B, ncol = 3))
-for(b in 1:B){
+B = 5
+source("function_library.R")
+setup_parallelism()
+estimates = foreach(b = 1:B, .combine = "rbind") %dopar% {
   
   bootIndices = sample(1:n, replace = T)
   bootData = data[bootIndices,]
-  X = subset(bootData, select = -c(studyid, any_arrest, any_violence))
+  X = subset(bootData, select = -c(studyid, any_violence, any_arrest))
   X = data.frame(model.matrix(~ . -1 , X))
   X1 = X0 = X
   X1$treatment = 1
@@ -108,7 +106,7 @@ for(b in 1:B){
   Qbar1W.star = plogis(qlogis(Qbar1W)+ eps*H.1W)
   Qbar0W.star = plogis(qlogis(Qbar0W)+ eps*H.0W) 
   PsiHat.TMLE.b = mean(Qbar1W.star - Qbar0W.star) 
-  estimates[b,] = c(PsiHat.SS.b, PsiHat.IPTW.b, PsiHat.TMLE.b)
+  c(PsiHat.SS.b, PsiHat.IPTW.b, PsiHat.TMLE.b)
 }
 
 colnames(estimates) = c("SimpSubps", "IPTW", "TMLE")
