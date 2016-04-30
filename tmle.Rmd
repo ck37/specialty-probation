@@ -73,7 +73,8 @@ system.time({
   result_arrest2 = estimate_effect(Y=data_arrest$any_arrest,
                       A=data_arrest$treatment, W=W_arrest,
                       parallel = "multicore", sl_lib = sl_lib,
-                      cluster=cluster, cv_folds = cv_folds)
+                      cluster=cluster, cv_folds = cv_folds,
+                      crossvalidate=T, outer_cv_folds = 5)
 })
 result_arrest2
 
@@ -82,6 +83,23 @@ result_arrest2$qinit
 result_arrest2$ghat
 
 save(result_arrest2, file="data/tmle-arrest2.RData")
+```
+
+```{r cache=T, results="asis"}
+# Output the weight tables in a separate block so that we can set results=asis.
+if ("qinit_cv" %in% names(result_arrest2)) {
+	# Review outer cross-validation results.
+	wgts = cvSL_review_weights(result_arrest2$qinit_cv)
+	# Limit to models with a SD > 0.
+	wgts = wgts[wgts[, 2] > 0, ]
+	print(xtable(wgts), type = "html")
+
+	wgts = cvSL_review_weights(result_arrest2$ghat_cv)
+	# Limit to models with a SD > 0.
+	wgts = wgts[wgts[, 2] > 0, ]
+	
+	print(xtable(wgts), type = "html")
+}
 ```
 
 ### Violence analysis
@@ -123,14 +141,28 @@ result_violence2$ghat
 if ("qinit_cv" %in% names(result_violence2)) {
 	# Review outer cross-validation results.
 	print(summary(result_violence2$qinit_cv))
-	wgts = cvSL_review_weights(result_violence2$qinit_cv)
-	print(xtable(wgts), type = "html")
 
 	print(summary(result_violence2$ghat_cv))
-	wgts = cvSL_review_weights(result_violence2$ghat_cv)
-	print(xtable(wgts), type = "html")
 
 }
 save(result_violence2, file="data/tmle-violence2.RData")
 
 ```
+
+```{r cache=T, results="asis"}
+# Output the weight tables in a separate block so that we can set results=asis.
+if ("qinit_cv" %in% names(result_violence2)) {
+	# Review outer cross-validation results.
+	wgts = cvSL_review_weights(result_violence2$qinit_cv)
+	# Limit to models with a SD > 0.
+	wgts = wgts[wgts[, 2] > 0, ]
+	print(xtable(wgts), type = "html")
+
+	wgts = cvSL_review_weights(result_violence2$ghat_cv)
+	# Limit to models with a SD > 0.
+	wgts = wgts[wgts[, 2] > 0, ]
+	
+	print(xtable(wgts), type = "html")
+}
+```
+
