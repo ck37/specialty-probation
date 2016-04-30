@@ -5,7 +5,8 @@ library("tmle")
 load("data/analysis-dataset.RData")
 load("data/covariates.RData")
 
-SL.library = c("SL.step")
+#SL.library = c("SL.step")
+SL.library = lib
 
 #Dealing with missing data for outcome
 data = data[!is.na(data$any_violence),]
@@ -21,7 +22,7 @@ X0$treatment = 0
 newdata = rbind(X, X1, X0)
 
 #Superlearn for Qbar
-Qinit = SuperLearner(Y = data$any_violence, X = X, newX = newdata, SL.library = SL.library, family = "binomial", )
+Qinit = SuperLearner(Y = data$any_violence, X = X, newX = newdata, SL.library = SL.library, family = "binomial")
 n = dim(data)[1]
 QbarAW = Qinit$SL.predict[1:n]
 Qbar1W = Qinit$SL.predict[(n+1):(2*n)]

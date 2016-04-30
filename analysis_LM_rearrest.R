@@ -1,11 +1,9 @@
 #ARREST!!!!
-library("SuperLearner")
-library("tmle")
-
 load("data/analysis-dataset.RData")
 load("data/covariates.RData")
 
-SL.library = c("SL.step")
+#SL.library = c("SL.step")
+SL.library = lib
 
 #Dealing with missing data for outcome
 data = data[!is.na(data$any_arrest),]
@@ -21,7 +19,7 @@ X0$treatment = 0
 newdata = rbind(X, X1, X0)
 
 #Superlearn for Qbar
-Qinit = SuperLearner(Y = data$any_arrest, X = X, newX = newdata, SL.library = SL.library, family = "binomial", )
+Qinit = SuperLearner(Y = data$any_arrest, X = X, newX = newdata, SL.library = SL.library, family = "binomial")
 n = dim(data)[1]
 QbarAW = Qinit$SL.predict[1:n]
 Qbar1W = Qinit$SL.predict[(n+1):(2*n)]
@@ -71,9 +69,10 @@ PsiHat.TMLE = mean(Qbar1W.star) - mean(Qbar0W.star)
 PsiHat.TMLE2 = tmle(Y=data$any_arrest, A=data$treatment, W=W, Q=cbind(Qbar0W, Qbar1W), g1W=gHat1W, family="binomial")
 PsiHat.TMLE2$estimates$ATE
 
-B = 500
-estimates = data.frame(matrix(NA, nrow = B, ncol = 3))
-for(b in 1:B){
+B = 5
+source("function_library.R")
+setup_parallelism()
+estimates = foreach(b = 1:B, .combine = "rbind") %dopar% {
   
   bootIndices = sample(1:n, replace = T)
   bootData = data[bootIndices,]
@@ -107,7 +106,7 @@ for(b in 1:B){
   Qbar1W.star = plogis(qlogis(Qbar1W)+ eps*H.1W)
   Qbar0W.star = plogis(qlogis(Qbar0W)+ eps*H.0W) 
   PsiHat.TMLE.b = mean(Qbar1W.star - Qbar0W.star) 
-  estimates[b,] = c(PsiHat.SS.b, PsiHat.IPTW.b, PsiHat.TMLE.b)
+  c(PsiHat.SS.b, PsiHat.IPTW.b, PsiHat.TMLE.b)
 }
 
 colnames(estimates) = c("SimpSubps", "IPTW", "TMLE")
