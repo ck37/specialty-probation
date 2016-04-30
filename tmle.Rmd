@@ -18,7 +18,7 @@ cv_folds = 15
 
 ## Data prep
 
-```{r cache=T}
+```{r cache=F}
 load("data/analysis-dataset.RData")
 
 # Remove observations with missing data for the outcome.
@@ -47,7 +47,7 @@ sl_lib
 
 ### Arrest analysis
 
-```{r cache=T}
+```{r cache=T, eval=F}
 system.time({
   # Hide long output from stepAIC.
   out = capture.output({
@@ -61,6 +61,7 @@ system.time({
 # Very significant reduction in arrest rate.
 result_arrest
 
+save(result_arrest, file="data/tmle-arrest.RData")
 ```
 
 ```{r cache=F}
@@ -77,11 +78,13 @@ result_arrest2
 # Review SL weights
 result_arrest2$qinit
 result_arrest2$ghat
+
+save(result_arrest2, file="data/tmle-arrest2.RData")
 ```
 
 ### Violence analysis
 
-```{r cache=T}
+```{r cache=T, eval=F}
 
 system.time({
   # Hide long output from stepAIC.
@@ -94,6 +97,8 @@ system.time({
 # No effect on violence.
 result_violence
 
+save(result_violence, file="data/tmle-violence.RData")
+
 ```
 
 ```{r cache=F}
@@ -104,7 +109,8 @@ system.time({
   result_violence2 = estimate_effect(Y=data_violence$any_violence, 
                           A=data_violence$treatment, W=W_violence,
                           parallel = "multicore", sl_lib = sl_lib,
-                          cv_folds = cv_folds, cluster=cluster)
+                          cv_folds = cv_folds, cluster=cluster,
+      	  	  						crossvalidate=F, outer_cv_folds = 5)
 })
 result_violence2
 
@@ -112,10 +118,17 @@ result_violence2
 result_violence2$qinit
 result_violence2$ghat
 
-```
+if ("qinit_cv" %in% names(result_violence2)) {
+	# Review outer cross-validation results.
+	summary(result_violence2$qinit_cv)
+	wgts = cvSL_review_weights(result_violence$qinit_cv)
+	print(wgts, type = "html")
 
-```{r}
-# Save our results since they took a long time to compute.
-save(result_arrest, result_arrest2, result_violence, result_violence2,
-     file="data/tmle-results.RData")
+	summary(result_violence2$ghat_cv)
+	wgts = cvSL_review_weights(result_violence$ghat_cv)
+	print(wgts, type = "html")
+
+}
+save(result_violence2, file="data/tmle-violence2.RData")
+
 ```
