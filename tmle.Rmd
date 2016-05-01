@@ -29,6 +29,10 @@ data_violence = data[!is.na(data$any_violence), ]
 data_arrest = data[!is.na(data$any_arrest), ]
 rm(data)
 
+# Review dimensions of the outcome-specific datasets.
+dim(data_violence)
+dim(data_arrest)
+
 # Remove outcomes, assignment, and study id from dataset when creating W dataframe.
 W_violence = subset(data_violence, select=-c(any_arrest, treatment, studyid, any_violence))
 W_arrest = subset(data_arrest, select=-c(any_arrest, treatment, studyid, any_violence))
@@ -36,6 +40,10 @@ W_arrest = subset(data_arrest, select=-c(any_arrest, treatment, studyid, any_vio
 # Convert factors to column indicators.
 W_violence = data.frame(model.matrix(~ . -1 , W_violence))
 W_arrest = data.frame(model.matrix(~ . -1 , W_arrest))
+
+# Review dimensions of the W dataframes.
+dim(W_violence)
+dim(W_arrest)
 
 ```
 
@@ -51,6 +59,7 @@ sl_lib
 ### Arrest analysis
 
 ```{r cache=T, eval=T}
+
 system.time({
   # Hide long output from stepAIC.
   out = capture.output({
@@ -72,7 +81,8 @@ save(result_arrest, file="data/tmle-arrest.RData")
 
 set.seed(1)
 system.time({
-  # Takes about 2-10 minutes.
+  # Takes about 2-10 minutes without outer cross-validation.
+  # 10x that with outer cross-validation over 10 folds.
   result_arrest2 = estimate_effect(Y=data_arrest$any_arrest,
                       A=data_arrest$treatment, W=W_arrest,
                       parallel = "multicore", sl_lib = sl_lib,
@@ -108,6 +118,7 @@ if ("qinit_cv" %in% names(result_arrest2)) {
 
 ```{r cache=T, results="asis"}
 # Output the weight tables in a separate block so that we can set results=asis.
+
 if ("qinit_cv" %in% names(result_arrest2)) {
 	# Review outer cross-validation results.
   
@@ -136,6 +147,7 @@ if ("qinit_cv" %in% names(result_arrest2)) {
 
 ```{r cache=T, eval=T}
 
+
 system.time({
   # Hide long output from stepAIC.
   out = capture.output({
@@ -154,8 +166,10 @@ save(result_violence, file="data/tmle-violence.RData")
 ```{r cache=T}
 set.seed(1)
 # Compare to our own code:
+
 system.time({
-  # Takes about 2-10 minutes.
+  # Takes about 2-10 minutes without outer cross-validation.
+  # 10x that with outer cross-validation over 10 folds.
   result_violence2 = estimate_effect(Y=data_violence$any_violence, 
                           A=data_violence$treatment, W=W_violence,
                           parallel = "multicore", sl_lib = sl_lib,
@@ -169,6 +183,7 @@ save(result_violence2, file="data/tmle-violence2.RData")
 
 ```{r cache=T}
 # We put this in a separate block so that we can modify without invalidating the analysis cache.
+
 
 # Review SL weights.
 result_violence2$qinit
@@ -192,6 +207,7 @@ if ("qinit_cv" %in% names(result_violence2)) {
 
 ```{r cache=T, results="asis"}
 # Output the weight tables in a separate block so that we can set results=asis.
+
 if ("qinit_cv" %in% names(result_violence2)) {
 	# Review outer cross-validation results.
   
