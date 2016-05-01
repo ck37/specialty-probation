@@ -101,6 +101,10 @@ estimates = foreach(b = 1:B, .combine = "rbind") %dopar% {
   
   PsiHat.IPTW.b = mean(bootData$treatment*bootData$any_violence/gHat1W) - mean((1-bootData$treatment)*bootData$any_violence/gHat0W)
   
+  gHatAW = rep(NA, n)
+  gHatAW[bootData$treatment == 1] = gHat1W[bootData$treatment == 1]
+  gHatAW[bootData$treatment == 0] = gHat0W[bootData$treatment == 0]
+  
   wt = 1/gHatAW
   PsiHat.IPTW.HT.b = mean(as.numeric(data$treatment==1)*wt*data$any_violence)/mean(as.numeric(data$treatment==1)*wt)-mean(as.numeric(data$treatment==0)*wt*data$any_violence)/mean(as.numeric(data$treatment==0)*wt)
   

@@ -75,7 +75,7 @@ PsiHat.TMLE = mean(Qbar1W.star) - mean(Qbar0W.star)
 PsiHat.TMLE2 = tmle(Y=data$any_arrest, A=data$treatment, W=W, Q=cbind(Qbar0W, Qbar1W), g1W=gHat1W, family="binomial")
 PsiHat.TMLE2$estimates$ATE
 
-B = 5
+B = 500
 source("function_library.R")
 setup_parallelism()
 estimates = foreach(b = 1:B, .combine = "rbind") %dopar% {
@@ -100,6 +100,10 @@ estimates = foreach(b = 1:B, .combine = "rbind") %dopar% {
   gHat0W = 1- gHat1W
   
   PsiHat.IPTW.b = mean(bootData$treatment*bootData$any_arrest/gHat1W) - mean((1-bootData$treatment)*bootData$any_arrest/gHat0W)
+  
+  gHatAW = rep(NA, n)
+  gHatAW[bootData$treatment == 1] = gHat1W[bootData$treatment == 1]
+  gHatAW[bootData$treatment == 0] = gHat0W[bootData$treatment == 0]
   
   wt = 1/gHatAW
   PsiHat.IPTW.HT.b = mean(as.numeric(data$treatment==1)*wt*data$any_arrest)/mean(as.numeric(data$treatment==1)*wt)-mean(as.numeric(data$treatment==0)*wt*data$any_arrest)/mean(as.numeric(data$treatment==0)*wt)
