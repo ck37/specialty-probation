@@ -191,8 +191,17 @@ estimate_effect = function(Y, A, W,
   #########
   # IPTW estimator (not stabilized)
   #########
+
+  # Classic version:
   psihat_iptw = mean((A == 1)*Y / gHatAW) - mean((A == 0)*Y / gHatAW)
   cat("Psihat IPTW:", round(psihat_iptw, digits), "\n")
+
+  # Stabilized version:
+  wgt = 1 / gHatAW
+  psihat_iptw_ht = mean((A == 1) * wgt * Y) / mean((A == 1) * wgt) -
+    mean((A == 0) * wgt * Y) / mean((A == 0) * wgt)
+
+  cat("Psihat IPTW HT:", round(psihat_iptw_ht, digits), "\n")
 
   #########
   # Clever covariate calculations.
@@ -235,7 +244,7 @@ estimate_effect = function(Y, A, W,
   # Return the results.
   results = list(qinit = qinit, ghat = gHatSL, influence_curve = ic,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
-                 psihat_tmle = psihat_tmle,
+                 psihat_iptw_ht = psihat_iptw_ht, psihat_tmle = psihat_tmle,
                  tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p)
   if (crossvalidate) {
     results = c(results, list(qinit_cv = qinit_cv, ghat_cv = gHatSL_cv))
@@ -249,6 +258,7 @@ estimate_effect = function(Y, A, W,
 print.estimate_effect = function(obj, digits = 4) {
   cat("Simple substitution estimate:", round(obj$psihat_ss, digits), "\n")
   cat("IPTW estimate:", round(obj$psihat_iptw, digits), "\n")
+  cat("IPTW HT estimate:", round(obj$psihat_iptw_ht, digits), "\n")
   cat("TMLE estimate:", round(obj$psihat_tmle, digits), "\n")
   cat("TMLE SE:", paste(round(obj$tmle_se, digits)), "\n")
   cat("TMLE CI:", paste(round(obj$tmle_ci, digits)), "\n")
