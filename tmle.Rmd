@@ -110,16 +110,24 @@ if ("qinit_cv" %in% names(result_arrest2)) {
 # Output the weight tables in a separate block so that we can set results=asis.
 if ("qinit_cv" %in% names(result_arrest2)) {
 	# Review outer cross-validation results.
+  
+  # Qinit SL meta-weights
 	wgts = cvSL_review_weights(result_arrest2$qinit_cv)
 	# Limit to models with a SD > 0.
 	wgts = wgts[wgts[, 2] > 0, ]
+	# Re-order by descending mean weight.
+	wgts = wgts[order(wgts[, 1], decreasing=T), ]
   cat("\nQinit weights:\n")
 	print(xtable(wgts), type = "html")
 
+  # ghat SL meta-weights
 	wgts = cvSL_review_weights(result_arrest2$ghat_cv)
 	# Limit to models with a SD > 0.
 	wgts = wgts[wgts[, 2] > 0, ]
-  cat("\n<br /><br />Ghat weights:\n")
+	# Re-order by descending mean weight.
+	wgts = wgts[order(wgts[, 1], decreasing=T), ]
+	 
+  cat("\n<br /><br />gHat weights:\n")
 	print(xtable(wgts), type = "html")
 }
 ```
@@ -186,16 +194,24 @@ if ("qinit_cv" %in% names(result_violence2)) {
 # Output the weight tables in a separate block so that we can set results=asis.
 if ("qinit_cv" %in% names(result_violence2)) {
 	# Review outer cross-validation results.
+  
+  # Qinit SL meta-weights.
 	wgts = cvSL_review_weights(result_violence2$qinit_cv)
 	# Limit to models with a SD > 0.
 	wgts = wgts[wgts[, 2] > 0, ]
+	# Re-order by descending mean weight.
+	wgts = wgts[order(wgts[, 1], decreasing=T), ]
   cat("Qinit weights:\n")
 	print(xtable(wgts), type = "html")
+	
+  # gHat SL meta-weights.
 	wgts = cvSL_review_weights(result_violence2$ghat_cv)
 	# Limit to models with a SD > 0.
 	wgts = wgts[wgts[, 2] > 0, ]
+	# Re-order by descending mean weight.
+	wgts = wgts[order(wgts[, 1], decreasing=T), ]
 	
-  cat("\n<br /><br />Ghat weights:\n")
+  cat("\n<br /><br />gHat weights:\n")
 	print(xtable(wgts), type = "html")
 }
 ```
