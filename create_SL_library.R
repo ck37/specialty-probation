@@ -31,4 +31,4 @@ create.SL.glmnet <- function(alpha = c(0,0.25, 0.50, 0.75,1)) {
 create.SL.glmnet()
 
 lib <- c("SL.DSA","SL.polymars","SL.stepAIC","SL.glmnet.0","SL.glmnet.0.25","SL.glmnet.0.75","SL.glmnet.0.5","SL.glmnet.1","SL.earth")
-lib <- c("SL.polymars","SL.stepAIC","SL.glmnet.0","SL.glmnet.0.25","SL.glmnet.0.75","SL.glmnet.0.5","SL.glmnet.1","SL.earth")
+lib <- c("SL.gam","SL.polymars","SL.stepAIC","SL.glmnet.0","SL.glmnet.0.25","SL.glmnet.0.75","SL.glmnet.0.5","SL.glmnet.1","SL.earth")

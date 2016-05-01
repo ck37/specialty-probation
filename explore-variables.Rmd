@@ -108,6 +108,7 @@ keep_fields$PB_PAIDRG = "PAI_drug"
 keep_fields$PB_PAIRXR = "PAI_RXR"
 
 
+
 # categorical variable for age at first arrest
 
 #keep_fields$PB_rehowold2.3 = "age_first_arrest_categ"
@@ -154,6 +155,8 @@ table(covariates$race)
 riskdata = read_spss("inbound/All other CJ outcomes_Baseline Start_Jan 2012.sav")
 
 covariates$totnightsnotatriskbto24 = riskdata$totnightsnotatriskbto24
+
+covariates[covariates$studyid=="DAS248",which(covariates[covariates$studyid=="DAS248",]==99)] <- NA
 
 save(covariates, file="data/covariates.RData")
 
