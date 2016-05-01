@@ -270,6 +270,8 @@ data$index_offense <- as.factor(data$index_offense)
 data$most_serious_crime <- as.factor(data$most_serious_crime)
 data$most_serious_charge <- as.factor(data$most_serious_charge)
 
+dim(data)
+
 save(data, file="data/analysis-dataset.RData")
 
 ```
