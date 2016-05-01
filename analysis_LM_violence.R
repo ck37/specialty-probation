@@ -7,6 +7,9 @@ SL.library = lib
 
 #Dealing with missing data for outcome
 data = data[!is.na(data$any_violence),]
+n = dim(data)[1]
+
+#Stop here to go to bootstrap
 
 #Data frame X with covariates and exposure
 X = subset(data, select = -c(studyid, any_arrest, any_violence))
@@ -20,7 +23,6 @@ newdata = rbind(X, X1, X0)
 
 #Superlearn for Qbar
 Qinit = SuperLearner(Y = data$any_violence, X = X, newX = newdata, SL.library = SL.library, family = "binomial")
-n = dim(data)[1]
 QbarAW = Qinit$SL.predict[1:n]
 Qbar1W = Qinit$SL.predict[(n+1):(2*n)]
 Qbar0W = Qinit$SL.predict[(2*n+1):(3*n)]
@@ -45,6 +47,10 @@ gHatAW[data$treatment == 0] = gHat0W[data$treatment == 0]
 
 ###IPTW ESTIMATOR###
 PsiHat.IPTW = mean(as.numeric(data$treatment==1)*data$any_violence/gHatAW) - mean(as.numeric(data$treatment==0)*data$any_violence/gHatAW)
+
+# HT estimator
+wt = 1/gHatAW
+PsiHat.IPTW.HT = mean(as.numeric(data$treatment==1)*wt*data$any_violence)/mean(as.numeric(data$treatment==1)*wt)-mean(as.numeric(data$treatment==0)*wt*data$any_violence)/mean(as.numeric(data$treatment==0)*wt)
 
 #Clever covariate for each subject
 H.AW = (2*data$treatment-1)/ gHatAW
@@ -95,7 +101,10 @@ estimates = foreach(b = 1:B, .combine = "rbind") %dopar% {
   
   PsiHat.IPTW.b = mean(bootData$treatment*bootData$any_violence/gHat1W) - mean((1-bootData$treatment)*bootData$any_violence/gHat0W)
   
-  H.AW = (2*bootData$treatment-1)/ gHatAW
+  wt = 1/gHatAW
+  PsiHat.IPTW.HT.b = mean(as.numeric(data$treatment==1)*wt*data$any_violence)/mean(as.numeric(data$treatment==1)*wt)-mean(as.numeric(data$treatment==0)*wt*data$any_violence)/mean(as.numeric(data$treatment==0)*wt)
+  
+  H.AW = bootData$treatment/gHat1W - (1-bootData$treatment)/gHat0W
   H.1W = 1/gHat1W 
   H.0W = -1/gHat0W
   
@@ -106,9 +115,9 @@ estimates = foreach(b = 1:B, .combine = "rbind") %dopar% {
   Qbar1W.star = plogis(qlogis(Qbar1W)+ eps*H.1W)
   Qbar0W.star = plogis(qlogis(Qbar0W)+ eps*H.0W) 
   PsiHat.TMLE.b = mean(Qbar1W.star - Qbar0W.star) 
-  c(PsiHat.SS.b, PsiHat.IPTW.b, PsiHat.TMLE.b)
+  c(PsiHat.SS.b, PsiHat.IPTW.b, PsiHat.IPTW.HT.b, PsiHat.TMLE.b)
 }
 
-colnames(estimates) = c("SimpSubps", "IPTW", "TMLE")
+colnames(estimates) = c("SimpSubps", "IPTW", "IPTW.HT", "TMLE")
 
 summary(estimates)
