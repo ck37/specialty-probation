@@ -1,4 +1,4 @@
-lib <- c("SL.polymars","SL.stepAIC","SL.glmnet.0","SL.glmnet.0.25","SL.glmnet.0.75","SL.glmnet.0.5","SL.glmnet.1","SL.earth")
+lib <- c("SL.gam","SL.polymars","SL.stepAIC","SL.glmnet.0","SL.glmnet.0.25","SL.glmnet.0.75","SL.glmnet.0.5","SL.glmnet.1","SL.earth")
 
 load("data/analysis-dataset.RData")
 
@@ -30,39 +30,23 @@ W_arrest2 = data.frame(model.matrix(~ . -1 , X_arrest2))
 
 
 library(SuperLearner)
-
-fit <- SuperLearner(Y=data_arrest$any_arrest,X=W_arrest,family="binomial", SL.library=lib)
-fit
-txt <- W_arrest
-control <- W_arrest
-txt$treatment <- 1
-control$treatment <- 0
-
-
-preds1 <- predict(fit,type='response',newdata=txt)[[1]]
-preds0 <- predict(fit,type='response',newdata=control)[[1]]
-
-mean(preds1-preds0)
-
-# -0.04334923
+ 
+# -0.1070508
 
 
 
-
-fit2 <- SuperLearner(Y=data_arrest$any_arrest,X=W_arrest2,family="binomial", SL.library=lib)
-fit2
 txt <- W_arrest2
 control <- W_arrest2
 txt$treatment <- 1
 control$treatment <- 0
-
-
-preds1 <- predict(fit2,type='response',newdata=txt)[[1]]
-preds0 <- predict(fit2,type='response',newdata=control)[[1]]
-
+newdata <- rbind(W_arrest2,txt,control)
+fit2 <- SuperLearner(Y=data_arrest$any_arrest,X=W_arrest2,newX=newdata,family="binomial", SL.library=lib)
+fit2
+preds1 <- fit2$SL.predict[355:708]
+preds0 <- fit2$SL.predict[709:1062]
 mean(preds1-preds0)
 
-# -0.07241793
+# 
 
 
 
@@ -70,35 +54,33 @@ mean(preds1-preds0)
 
 
 
-
-fit.viol <- SuperLearner(Y=data_viol$any_viol,X=W_viol,family="binomial", SL.library=lib)
-fit.viol
 txt <- W_viol
 control <- W_viol
 txt$treatment <- 1
 control$treatment <- 0
-
-preds1 <- predict(fit.viol,type='response',newdata=txt)[[1]]
-preds0 <- predict(fit.viol,type='response',newdata=control)[[1]]
+newdata <- rbind(txt,control)
+fit.viol <- SuperLearner(Y=data_viol$any_viol,X=W_viol,newX=newdata,family="binomial", SL.library=lib)
+fit.viol
+preds1 <- fit.viol$SL.predict[1:291]
+preds0 <- fit.viol$SL.predict[292:582]
 
 mean(preds1-preds0)
 
-# -0.003660523
+# 0.0001
 
 
 
 
-
-fit.viol2 <- SuperLearner(Y=data_viol$any_viol,X=W_viol2,family="binomial", SL.library=lib)
-fit.viol2
 txt <- W_viol2
 control <- W_viol2
 txt$treatment <- 1
 control$treatment <- 0
-
-preds1 <- predict(fit.viol2,type='response',newdata=txt)[[1]]
-preds0 <- predict(fit.viol2,type='response',newdata=control)[[1]]
+newdata <- rbind(txt,control)
+fit.viol2 <- SuperLearner(Y=data_viol$any_viol,X=W_viol2,newX=newdata,family="binomial", SL.library=lib)
+fit.viol2
+preds1 <- fit.viol2$SL.predict[1:291]
+preds0 <- fit.viol2$SL.predict[292:582]
 
 mean(preds1-preds0)
 
-#  -0.00461374
+#  0.001010674
