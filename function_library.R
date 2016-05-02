@@ -18,7 +18,6 @@ load_all_libraries = function() {
     library(randomForest)
     library(gam)
     library(xtable)
-    library(ggplot2)
   })
 }
 

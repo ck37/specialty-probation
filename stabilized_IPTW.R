@@ -5,10 +5,8 @@ load("data/analysis-dataset.RData")
 
 names(data)
 
-data_viol <- data[-153,]
-data_arrest <- data[-153,]
-data_viol <- data_viol[!is.na(data_viol$any_violence),]
-data_arrest <- data_arrest[!is.na(data_arrest$any_arrest),]
+data_viol <- data[!is.na(data$any_violence),]
+data_arrest <- data[!is.na(data$any_arrest),]
 
 X_viol = subset(data_viol, select=-c(studyid,treatment, any_violence, any_arrest))
 X_viol <- X_viol[,1:29]
@@ -35,48 +33,35 @@ W_arrest2 = data.frame(model.matrix(~ . -1 , X_arrest2))
 # fit the model to predict P(A|W)
 
 gfit <- SuperLearner(Y=data_arrest$treatment,X=W_arrest,family="binomial", SL.library=lib)
-
 pred.g1W <- predict(gfit,type='response')[[1]]
 pred.g0W <- 1-pred.g1W
-
 gAW <- c()
 length(gAW) <- nrow(data_arrest)
 gAW[data_arrest$treatment==1] <- pred.g1W[data_arrest$treatment==1]
 gAW[data_arrest$treatment==0] <- pred.g0W[data_arrest$treatment==0]
-
 summary(gAW)
-
 wt <- 1/gAW
-
-# HT estimator
-
 mean(as.numeric(data_arrest$treatment==1)*wt*data_arrest$any_arrest)/mean(as.numeric(data_arrest$treatment==1)*wt)-mean(as.numeric(data_arrest$treatment==0)*wt*data_arrest$any_arrest)/mean(as.numeric(data_arrest$treatment==0)*wt)
+# -0.2079611
 
-# -0.1918489
-
-
+mean(as.numeric(data_arrest$treatment==1)*wt*data_arrest$any_arrest)-mean(as.numeric(data_arrest$treatment==0)*wt*data_arrest$any_arrest)
+# 
 
 
 
 gfit2 <- SuperLearner(Y=data_arrest$treatment,X=W_arrest2,family="binomial", SL.library=lib)
-
 pred.g1W <- predict(gfit2,type='response')[[1]]
 pred.g0W <- 1-pred.g1W
-
 gAW <- c()
 length(gAW) <- nrow(data_arrest)
 gAW[data_arrest$treatment==1] <- pred.g1W[data_arrest$treatment==1]
 gAW[data_arrest$treatment==0] <- pred.g0W[data_arrest$treatment==0]
-
 summary(gAW)
-
 wt <- 1/gAW
-
-# HT estimator
-
 mean(as.numeric(data_arrest$treatment==1)*wt*data_arrest$any_arrest)/mean(as.numeric(data_arrest$treatment==1)*wt)-mean(as.numeric(data_arrest$treatment==0)*wt*data_arrest$any_arrest)/mean(as.numeric(data_arrest$treatment==0)*wt)
+# -0.2069941
 
-# -0.1824895
+mean(as.numeric(data_arrest$treatment==1)*wt*data_arrest$any_arrest)-mean(as.numeric(data_arrest$treatment==0)*wt*data_arrest$any_arrest)
 
 
 
@@ -87,48 +72,35 @@ mean(as.numeric(data_arrest$treatment==1)*wt*data_arrest$any_arrest)/mean(as.num
 
 
 gfit_viol <- SuperLearner(Y=data_viol$treatment,X=W_viol,family="binomial", SL.library=lib)
-
 pred.g1W <- predict(gfit_viol,type='response')[[1]]
 pred.g0W <- 1-pred.g1W
-
 gAW <- c()
 length(gAW) <- nrow(data_viol)
 gAW[data_viol$treatment==1] <- pred.g1W[data_viol$treatment==1]
 gAW[data_viol$treatment==0] <- pred.g0W[data_viol$treatment==0]
-
 summary(gAW)
-
 wt <- 1/gAW
-
-# HT estimator
-
 mean(as.numeric(data_viol$treatment==1)*wt*data_viol$any_viol)/mean(as.numeric(data_viol$treatment==1)*wt)-mean(as.numeric(data_viol$treatment==0)*wt*data_viol$any_viol)/mean(as.numeric(data_viol$treatment==0)*wt)
+# -0.009732972
 
-# 
-
-
+mean(as.numeric(data_viol$treatment==1)*wt*data_viol$any_viol)-mean(as.numeric(data_viol$treatment==0)*wt*data_viol$any_viol)
+# 0.01462514
 
 
 
 
 gfit_viol2 <- SuperLearner(Y=data_viol$treatment,X=W_viol2,family="binomial", SL.library=lib)
-
 pred.g1W <- predict(gfit_viol2,type='response')[[1]]
 pred.g0W <- 1-pred.g1W
-
 gAW <- c()
 length(gAW) <- nrow(data_viol)
 gAW[data_viol$treatment==1] <- pred.g1W[data_viol$treatment==1]
 gAW[data_viol$treatment==0] <- pred.g0W[data_viol$treatment==0]
-
 summary(gAW)
-
 wt <- 1/gAW
-
-# HT estimator
-
 mean(as.numeric(data_viol$treatment==1)*wt*data_viol$any_viol)/mean(as.numeric(data_viol$treatment==1)*wt)-mean(as.numeric(data_viol$treatment==0)*wt*data_viol$any_viol)/mean(as.numeric(data_viol$treatment==0)*wt)
-
-# 
+# -0.01241035
+mean(as.numeric(data_viol$treatment==1)*wt*data_viol$any_viol)-mean(as.numeric(data_viol$treatment==0)*wt*data_viol$any_viol)
+# 0.0140722
 
 
