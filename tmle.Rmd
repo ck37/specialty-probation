@@ -15,6 +15,8 @@ cluster = setup_parallelism()
 # Increase to 15 CV folds for estimate_effect()
 cv_folds = 15
 
+library(ggplot2)
+
 # Customize ggplot2 default theme.
 theme_set(theme_light() + theme(plot.background = element_rect(color = "grey", fill="#f5f5f5")))
 ```
@@ -24,26 +26,13 @@ theme_set(theme_light() + theme(plot.background = element_rect(color = "grey", f
 ```{r cache=F}
 load("data/analysis-dataset.RData")
 
-# Remove observations with missing data for the outcome.
-data_violence = data[!is.na(data$any_violence), ]
-data_arrest = data[!is.na(data$any_arrest), ]
-rm(data)
-
-# Review dimensions of the outcome-specific datasets.
-dim(data_violence)
-dim(data_arrest)
-
-# Remove outcomes, assignment, and study id from dataset when creating W dataframe.
-W_violence = subset(data_violence, select=-c(any_arrest, treatment, studyid, any_violence))
-W_arrest = subset(data_arrest, select=-c(any_arrest, treatment, studyid, any_violence))
-
-# Convert factors to column indicators.
-W_violence = data.frame(model.matrix(~ . -1 , W_violence))
-W_arrest = data.frame(model.matrix(~ . -1 , W_arrest))
-
-# Review dimensions of the W dataframes.
-dim(W_violence)
+# Check for missing indicators that are all 0.
+colMeans(W_arrest[, colnames(W_arrest)[42:ncol(W_arrest)]])
+  
+# Remove miss_index_offense and miss_recent_violence because sd = 0.
+#W_arrest = subset(W_arrest, select=-c(miss_index_offense, miss_recent_violence))
 dim(W_arrest)
+
 
 # Naive estimate
 summary(glm(any_arrest ~ treatment, data=data_arrest, family="binomial"))
