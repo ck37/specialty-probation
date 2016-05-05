@@ -6,4 +6,4 @@ analysis:  tmle.Rmd function_library.R
 	Rscript -e "markdown::markdownToHTML('tmle.md', 'tmle.html')"
 
 clean:
-	rm -f data/*
+	rm -f data/* cache/*
