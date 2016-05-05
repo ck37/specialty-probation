@@ -72,7 +72,7 @@ for (lib_i in 1:length(libs)) {
   results[[lib_i]] = result
 }
 
-save(results, file="lib-robustness-analysis.RData")
+save(results, file="data/lib-robustness-analysis.RData")
 ```
 
 ```{r}
