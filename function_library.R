@@ -178,6 +178,8 @@ estimate_effect = function(Y, A, W,
   gHatSL = sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl, family="binomial")
   gHat1W = gHatSL$SL.predict
   gHat0W = 1 - gHat1W
+  # Check if gHat1W is all NAs. If so, the model fitting failed.
+  stopifnot(mean(is.na(gHat1W)) != 1)
 
   gHatAW = rep(NA, n)
   gHatAW[A == 1] = gHat1W[A == 1]
@@ -194,6 +196,8 @@ estimate_effect = function(Y, A, W,
   # Classic version:
   psihat_iptw = mean((A == 1)*Y / gHatAW) - mean((A == 0)*Y / gHatAW)
   cat("Psihat IPTW:", round(psihat_iptw, digits), "\n")
+  # Confirm that psihat_iptw is not NA.
+  stopifnot(!is.na(psihat_iptw))
 
   # Stabilized version:
   wgt = 1 / gHatAW
