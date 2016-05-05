@@ -7,7 +7,7 @@ load_all_libraries = function() {
     library(RhpcBLASctl)  # Accurate physical core detection
     library(SuperLearner)
     library(xgboost)      # For GBM
-    library(DSA)          # Install this package from Mark's software webpage
+#    library(DSA)          # Install this package from Mark's software webpage
     library(earth)        # For mars
     library(tmle)
     library(glmnet)       # For ridge/lasso/glm
@@ -160,6 +160,9 @@ estimate_effect = function(Y, A, W,
   Qbar1W = qinit$SL.predict[(n+1):(2*n)]
   Qbar0W = qinit$SL.predict[(2*n+1):(3*n)]
 
+  # Confirm that qinit is not all NA.
+  stopifnot(!all(is.na(qinit$SL.predict)))
+
   if (crossvalidate) {
     # No newdata argument in this call.
     qinit_cv = cv_sl_fn(Y=Y, X=x, cvControl = cv_ctrl, SL.library=sl_lib, family=family)
@@ -170,7 +173,7 @@ estimate_effect = function(Y, A, W,
   #######
 
   psihat_ss = mean(Qbar1W - Qbar0W)
-  cat("Psihat simple substitution:", round(psihat_ss, digits), "\n")
+  cat("Psihat SS:", round(psihat_ss, digits), "\n")
 
   # Stop early if psihat_ss is NA.
   stopifnot(!is.na(psihat_ss))
@@ -206,6 +209,7 @@ estimate_effect = function(Y, A, W,
 
   cat("Psihat IPTW HT:", round(psihat_iptw_ht, digits), "\n")
 
+
   #########
   # Clever covariate calculations.
   #########
@@ -226,7 +230,7 @@ estimate_effect = function(Y, A, W,
   # TMLE estimate
   ##########
   psihat_tmle = mean(Qbar1W_star - Qbar0W_star)
-  cat("Psihat tmle:", round(psihat_tmle, digits), "\n")
+  cat("Psihat TMLE:", round(psihat_tmle, digits), "\n")
 
   ###########
   # Efficient inference (Lab 6)
@@ -244,14 +248,21 @@ estimate_effect = function(Y, A, W,
   # P-value
   tmle_p = 2 * pnorm(-abs(psihat_tmle / ic_se), lower.tail=T)
 
+  #########
+  # Finalization.
+
+  cat("Max g-weight:", round(max(wgt), 1), "\n")
+
   # Return the results.
   results = list(qinit = qinit, ghat = gHatSL, influence_curve = ic,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
                  psihat_iptw_ht = psihat_iptw_ht, psihat_tmle = psihat_tmle,
-                 tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p)
+                 tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p, weights=wgt)
+
   if (crossvalidate) {
     results = c(results, list(qinit_cv = qinit_cv, ghat_cv = gHatSL_cv))
   }
+
   class(results) = "estimate_effect"
   results
 }
@@ -501,7 +512,8 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
   }
 
   # TODO: see if we want to tweak the hyperparameters of any of these singular models.
-  lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.polymars",
+  # Remove "SL.polymars", for now. (CK 5/4/16)
+  lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm",
           "SL.stepAIC", "SL.earth", "SL.rpartPrune", gam_libs)
 
   if (dsa) {
