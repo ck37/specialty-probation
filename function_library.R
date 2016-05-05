@@ -574,12 +574,16 @@ create.SL.gam <- function(degree = c(3, 4)) {
 # Remove constant columns in the dataframe (sd = 0).
 remove_constant_columns = function(data) {
   # Remove columns that are constant (sd = 0). (ignore warning about NA)
-  col_sds = apply(data, MARGIN=2, FUN=sd)
+  suppressWarnings({
+    col_sds = apply(data, MARGIN=2, FUN=sd)
+  })
   # We need the !is.na() so columns with NA for sd (e.g. character cols) aren't included.
   bad_cols = col_sds == 0 & !is.na(col_sds)
   # TODO: handle situation where dataframe has no column names.
   bad_col_names = colnames(data)[bad_cols]
-  cat("Bad columns:", bad_col_names, "\n")
-  data = data[, !colnames(data) %in% bad_col_names]
+  if (sum(bad_cols) > 0) {
+    cat("Constant columns:", bad_col_names, "\n")
+    data = data[, !colnames(data) %in% bad_col_names]
+  }
   data
 }
