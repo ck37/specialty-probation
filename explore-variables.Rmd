@@ -258,12 +258,13 @@ names(data)
 # Review NAs.
 apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
 
+# Don't impute outcome variables.
 outcomes = c("any_violence", "any_arrest")
 
 # Impute missing data, but skip outcome variables.
 data = impute_missing_values(data, skip_vars = outcomes)
 
-# Check NAs.
+# Check NAs - only outcome variables should have NAs at this point.
 apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
 
 data$index_offense <- as.factor(data$index_offense)
@@ -272,7 +273,35 @@ data$most_serious_charge <- as.factor(data$most_serious_charge)
 
 dim(data)
 
-save(data, file="data/analysis-dataset.RData")
+# Create outcome-specific dataframes, removing observations that are
+# missing that outcome.
+data_violence = data[!is.na(data$any_violence), ]
+data_arrest = data[!is.na(data$any_arrest), ]
+
+dim(data_arrest)
+dim(data_violence)
+
+# Remove columns with sd = 0.
+data_arrest = remove_constant_columns(data_arrest)
+data_violence = remove_constant_columns(data_violence)
+
+# Review dimensions of the outcome-specific datasets.
+dim(data_violence)
+dim(data_arrest)
+
+# Remove outcomes, assignment, and study id from dataset when creating W dataframe.
+W_violence = subset(data_violence, select=-c(any_arrest, treatment, studyid, any_violence))
+W_arrest = subset(data_arrest, select=-c(any_arrest, treatment, studyid, any_violence))
+
+# Convert factors to column indicators.
+W_violence = data.frame(model.matrix(~ . -1 , W_violence))
+W_arrest = data.frame(model.matrix(~ . -1 , W_arrest))
+
+# Review dimensions of the W dataframes.
+dim(W_violence)
+dim(W_arrest)
+
+save(data, data_arrest, data_violence, W_arrest, W_violence, file="data/analysis-dataset.RData")
 
 ```
 
