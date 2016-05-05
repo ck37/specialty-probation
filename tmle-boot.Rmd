@@ -1,0 +1,134 @@
+---
+title: "TMLE"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("function_library.R")
+load_all_libraries()
+cluster = setup_parallelism()
+
+# Increase to 15 CV folds for estimate_effect()
+cv_folds = 15
+
+library(ggplot2)
+
+# Customize ggplot2 default theme.
+theme_set(theme_light() + theme(plot.background = element_rect(color = "grey", fill="#f5f5f5")))
+```
+
+## Data prep
+
+```{r cache=F}
+load("data/analysis-dataset.RData")
+
+# Set dsa=T to re-enable DSA, but it will slow down the modeling significantly.
+# Remove XGB for now.
+custom_lib = create_SL_lib(num_cols = ncol(W_arrest), detailed_names = T, xgb=F)
+sl_lib = custom_lib$lib
+sl_lib
+
+B = 500
+```
+
+## TMLE
+
+### Arrest analysis
+
+```{r cache=T, eval=T}
+
+set.seed(1)
+B = 4
+
+# List to store the results from each bootstrap run.
+arrest_boot = vector("list", B)
+
+n = nrow(data_arrest)
+
+# Time the entire bootstrapping process.
+system.time({
+arrest_boot = foreach (b = 1:B) %dopar% {
+  results = list()
+  
+  # Time how long each iteration takes.
+  time_iter = system.time({
+  
+  # Create bootstrap sample.
+  boot_indices = sample(n, n, replace=T)
+  
+  # Not sure if this is the best way.
+  data = data_arrest[boot_indices, ]
+  W = W_arrest[boot_indices, ]
+  
+  # TODO: handle obs weights and ensure replicates are in the same CV fold.
+  
+  # Manual TMLE, 2-13 minutes.
+  time_tmle_man = system.time({
+  tmle_man = estimate_effect(Y=data$any_arrest, A=data$treatment, W=W,
+                             sl_lib=sl_lib, cv_folds = cv_folds)
+  })
+  tmle_man$time = time_tmle_man
+  
+  results$tmle_man = tmle_man
+  
+  }) # Finish timing the loop.
+  
+  results$time_iter = time_iter
+ 
+  results 
+}
+})
+
+save(arrest_boot, file="data/tmle-arrest-boot.RData")
+```
+
+```{r}
+
+# Compile results into a table.
+colnames = c("psihat_ss", "psihat_iptw", "psihat_iptw_ht", "psihat_tmle", "tmle_upper", "tmle_lower", "tmle_p", "max_gwgt", "qinit_risk", "qinit_sd", "ghat_risk", "ghat_sd", "time_elapsed", "time_user")
+
+df = data.frame(matrix(nrow=length(arrest_boot), ncol=length(colnames)))
+colnames(df) = colnames
+
+# Extract results
+for (i in 1:length(arrest_boot)) {
+  iter = arrest_boot[[i]]
+  tmle_man = iter$tmle_man
+  
+  # Extract point estimates.
+  df[i, ]$psihat_ss = tmle_man$psihat_ss
+  df[i, ]$psihat_iptw = tmle_man$psihat_iptw
+  df[i, ]$psihat_iptw_ht = tmle_man$psihat_iptw_ht
+  df[i, ]$psihat_tmle = tmle_man$psihat_tmle
+          
+  # Extract TMLE CI
+  df[i, ]$tmle_lower = tmle_man$tmle_ci[1]
+  df[i, ]$tmle_upper = tmle_man$tmle_ci[2]
+  # Extract TMLE p-value
+  df[i, ]$tmle_p = tmle_man$tmle_p
+  # Extract max g-weight. NOTE this is just for gHatAW, not gHat1W or 0W!
+  df[i, ]$max_gwgt = max(tmle_man$weights)
+ 
+  # Not doing outer cross-validation in this analysis. 
+  if ("qinit_cv" %in% names(tmle_man)) {
+    # Ave SL risk qInit
+    df[i, ]$qinit_risk = mean(summary(result$qinit_cv)$Risk.SL)
+    df[i, ]$qinit_sd = sd(summary(result$qinit_cv)$Risk.SL)
+    # Ave SL risk gHat
+    df[i, ]$ghat_risk = mean(summary(result$ghat_cv)$Risk.SL)
+    df[i, ]$ghat_sd = sd(summary(result$ghat_cv)$Risk.SL)
+  } else {
+  }
+  
+  # Time to calculate the entire loop.
+  df[i, ]$time_elapsed = iter$time_iter[["elapsed"]]
+}
+
+colMeans(df)
+```
+
+TODO: violence analysis.
