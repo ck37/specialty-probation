@@ -50,6 +50,8 @@ summary(glm(any_arrest ~ treatment, data=data_arrest, family="binomial"))
 summary(glm(any_violence ~ treatment, data=data_violence, family="binomial"))
 (table("Tx"=data_arrest$treatment, "Arrest"=data_arrest$any_arrest, useNA="ifany"))
 
+# Save our data prior to analysis.
+save(W_violence, W_arrest, data_violence, data_arrest, file="data/tmle-data-prep.RData")
 ```
 
 ```{r}
