@@ -440,7 +440,7 @@ create.SL.xgboost = function(tune = list(ntrees = c(1000), max_depth = c(4), shr
 }
 
 
-create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, glmnet_size = 11, detailed_names = F) {
+create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, gam=T, glmnet_size = 11, detailed_names = F) {
 
   glmnet_libs = c()
   if (glmnet) {
@@ -493,9 +493,16 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
     print(rf_grid)
   }
 
+  gam_libs = c()
+  if (gam) {
+    gam_degrees = c(2, 3, 4)
+    gam_models = create.SL.gam(gam_degrees)
+    gam_libs = gam_models$names
+  }
+
   # TODO: see if we want to tweak the hyperparameters of any of these singular models.
   lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.polymars",
-          "SL.stepAIC", "SL.earth", "SL.rpartPrune", "SL.gam")
+          "SL.stepAIC", "SL.earth", "SL.rpartPrune", gam_libs)
 
   if (dsa) {
     # WARNING: super duper slow :/
@@ -536,4 +543,18 @@ cvSL_review_weights = function(cv_sl) {
 # Combine the stats into a single matrix.
   sl_stats = cbind("mean(weight)"=means, "sd(weight)"=sds, "min(weight)"=mins, "max(weight)"=maxs)
   sl_stats
+}
+
+# Modified from SuperLearnerExtra:
+# Creates gam wrappers in the global environment with different degrees.
+# The default value for deg.gam in SL.gam is 2
+create.SL.gam <- function(degree = c(3, 4)) {
+  names = rep("", length(degree))
+  for(mm in seq(length(degree))){
+    name = paste0('SL.gam.', degree[mm])
+    names[mm] = name
+    eval(parse(text = paste0(name, '<- function(..., deg.gam = ', degree[mm], ') SL.gam(..., deg.gam = deg.gam)')), envir = .GlobalEnv)
+  }
+  results = list(names = names, degree = degree)
+  invisible(results)
 }
