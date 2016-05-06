@@ -255,6 +255,12 @@ data$site = NULL
 data = cbind(data[, c("studyid", "treatment")], subset(data, select=-c(studyid, treatment)))
 names(data)
 
+# Check the class of each column.
+sapply(names(data), FUN=function(colname) { class(data[, colname]) } )
+
+# And review the detailed structure.
+str(data)
+
 # Review NAs.
 apply(data, MARGIN=2, FUN=function(col) { sum(is.na(col)) })
 
