@@ -18,6 +18,7 @@ load_all_libraries = function() {
     library(randomForest)
     library(gam)
     library(xtable)
+    library(arm)          # For bayesglm
   })
 }
 
@@ -513,7 +514,7 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
 
   # TODO: see if we want to tweak the hyperparameters of any of these singular models.
   # Remove "SL.polymars", for now. (CK 5/4/16)
-  lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm",
+  lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.bayesglm",
           "SL.stepAIC", "SL.earth", "SL.rpartPrune", gam_libs)
 
   if (dsa) {
