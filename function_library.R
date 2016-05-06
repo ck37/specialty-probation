@@ -4,6 +4,7 @@ load_all_libraries = function() {
     library(foreach)      # For parallel looping
     library(doMC)         # For multicore
     library(doSNOW)       # For multinode
+    library(doParallel)   # For multicore (esp. GenMatch usage)
     library(RhpcBLASctl)  # Accurate physical core detection
     library(SuperLearner)
     library(xgboost)      # For GBM
@@ -313,7 +314,7 @@ setup_parallelism = function(conf = NULL, type="either", allow_multinode = T,
     }
   }
 
-  if (multinode || type %in% c("cluster", "doParallel")) {
+  if (multinode || type %in% c("cluster", "doSNOW")) {
     # Outfile = "" allows output from within foreach to be displayed while in RStudio.
     # TODO: figure out how to suppress the output from makeCluster()
     #capture.output({ cl = parallel::makeCluster(cores, outfile = outfile) })
@@ -324,6 +325,12 @@ setup_parallelism = function(conf = NULL, type="either", allow_multinode = T,
     registerDoSNOW(cl)
     setDefaultCluster(cl)
     parallel_type = "snow"
+  } else if (type %in% c("doParallel")) {
+    # Outfile = "" allows output from within foreach to be displayed.
+    # TODO: figure out how to suppress the output from makeCluster()
+    capture.output({ cl = parallel::makeCluster(cores, outfile = outfile) })
+    registerDoParallel(cl)
+    setDefaultCluster(cl)
   } else {
     # doMC only supports multicore parallelism, not multi-node.
     registerDoMC(cores)
@@ -588,3 +595,42 @@ remove_constant_columns = function(data) {
   }
   data
 }
+
+# Extract the t-test and ks-stats from a MatchBalance object.
+# Return a DF.
+extract_match_pvals = function(mb) {
+  # bm = before match
+  colnames = c("bm_t", "bm_ks")
+
+  after_match = F
+  # Include AfterMatching pvals if they exist.
+  if (length(mb$AfterMatching) > 0) {
+    # AM = after match
+    colnames = c(colnames, "am_t", "am_ks")
+    after_match = T
+  }
+
+  # Create a dataframe to store the results.
+  pvals = data.frame(matrix(nrow=length(mb$BeforeMatching), ncol=length(colnames)))
+  colnames(pvals) = colnames
+
+  # Collect p-values from the balance tests.
+  for (i in 1:length(mb$BeforeMatching)) {
+    covar = mb$BeforeMatching[[i]]
+    pvals[i, "bm_t"] = covar$p.value
+    # Dichotomous variables will not have a KS test statistic.
+    if ("ks" %in% names(covar)) {
+      pvals[i, "bm_ks"] = covar$ks$ks.boot.pvalue
+    }
+    if (after_match) {
+      covar_am = mb$AfterMatching[[i]]
+      pvals[i, "am_t"] = covar_am$p.value
+      # Dichotomous variables will not have a KS test statistic.
+      if ("ks" %in% names(covar_am)) {
+        pvals[i, "am_ks"] = covar_am$ks$ks.boot.pvalue
+      }
+    }
+  }
+  pvals
+}
+
