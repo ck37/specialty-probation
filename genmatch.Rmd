@@ -1,0 +1,205 @@
+---
+title: "Matching Analysis"
+author: "Chris Kennedy"
+date: "May 6, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+source("function_library.R")
+load_all_libraries()
+conf = list()
+library(Matching)
+# Need to make a doParallel or doSNOW cluster for genMatch, not doMC.
+conf$cluster = setup_parallelism(type="doParallel")
+
+library(ggplot2)
+
+# Customize ggplot2 default theme.
+theme_set(theme_light() + theme(plot.background = element_rect(color = "grey", fill="#f5f5f5")))
+```
+
+## Data prep
+
+```{r cache=F}
+load("data/analysis-dataset.RData")
+
+# Take out missing data indicators to see if that helps improve balance.
+W_arrest = W_arrest[, grep("miss_", colnames(W_arrest), invert=T)]
+colnames(W_arrest)
+
+data = W_arrest
+
+# Variables we want to check for balance on, plus treatment.
+balance_covars = colnames(W_arrest)
+treat_var = "treatment"
+
+# NAs have already been removed.
+data_clean = cbind(outcome=data_arrest$any_arrest,
+                   treatment=data_arrest$treatment,
+                   W_arrest)
+
+# If we are losing rows (e.g. due to na.omit) we need to fix our Y variable
+# For use in Match() below.
+stopifnot(nrow(data_clean) == nrow(data))
+
+
+# Review balance of the with-replacement match; suppress lengthy automatic output.
+# DV is the treatment indicator
+# nboots should be at least 100.
+system.time({
+  mb1 = MatchBalance(treatment ~ ., data=data_clean, nboots=5000, print.level=0)
+})
+
+pvals_bm = extract_match_pvals(mb1)
+
+pvals_bm_combined = c(pvals_bm$bm_t, pvals_bm$bm_ks)
+summary(pvals_bm$bm_t)
+summary(pvals_bm_combined)
+# Ignore NAs for KS-test on dichotomous variables.
+sd(pvals_bm_combined, na.rm=T)
+#print(summary(pvalues))
+hist(pvals_bm_combined, main="Before Matching: p-values from MatchBalance", xlab=paste0("Mean = ", round(mean(pvals_bm_combined, na.rm=T), 3)))
+
+
+# Match with replacement, use available cluster.
+conf$max_gens = 100
+conf$pop_size = 1000
+#conf$pop_size = 50
+conf$wait_gens = 5
+
+set.seed(1)
+
+# Time how long this takes.
+system.time({
+  gen1 = GenMatch(Tr=data_clean$treatment, X=data_clean[, balance_covars],
+                   estimand="ATE", replace=T, M=1, cluster=conf$cluster,
+                   max.generation=conf$max_gens, pop.size=conf$pop_size,
+                   wait.generations=conf$wait_gens, unif.seed = 436383,
+                   int.seed = 177784, print.level=0)
+})
+mat1 = Match(Y=data_clean$outcome, Tr=data_clean$treatment, X=data_clean[, balance_covars], estimand="ATE", Weight.matrix=gen1)
+summary(mat1)
+
+save(gen1, mat1, file="data/arrest-genmatch-results.RData")
+
+# Review balance of the with-replacement match; suppress lengthy automatic output
+# DV is the treatment indicator. nboots should be at least 100.
+system.time({
+  mb2 = MatchBalance(treatment ~ ., data=data_clean, match.out=mat1, nboots=5000, print.level=0)
+})
+pvals_am = extract_match_pvals(mb2)
+pvals_am
+
+colMeans(pvals_am, na.rm=T)
+
+pvals_am_combined = c(pvals_am$am_t, pvals_am$am_ks)
+summary(pvals_bm_combined)
+summary(pvals_am_combined)
+
+summary(pvals_am$bm_t)
+summary(pvals_am$am_t)
+
+sd(pvals_bm_combined, na.rm=T)
+sd(pvals_am_combined, na.rm=T)
+
+hist(pvals_am_combined, main="After Matching: p-values from MatchBalance", xlab=paste0("Mean = ", round(mean(pvals_am_combined, na.rm=T), 3)))
+
+```
+
+Violence analysis
+
+```{r}
+load("data/analysis-dataset.RData")
+
+# Take out missing data indicators to see if that helps improve balance.
+W_violence = W_violence[, grep("miss_", colnames(W_violence), invert=T)]
+colnames(W_arrest)
+
+data = data_violence
+
+# Variables we want to check for balance on, plus treatment.
+balance_covars = colnames(W_violence)
+treat_var = "treatment"
+
+# NAs have already been removed.
+data_clean = cbind(outcome=data$any_violence,
+                   treatment=data$treatment,
+                   W_violence)
+
+# If we are losing rows (e.g. due to na.omit) we need to fix our Y variable
+# For use in Match() below.
+stopifnot(nrow(data_clean) == nrow(data))
+
+
+# Review balance of the with-replacement match; suppress lengthy automatic output.
+# DV is the treatment indicator
+# nboots should be at least 100.
+system.time({
+  mb1 = MatchBalance(treatment ~ ., data=data_clean, nboots=5000, print.level=0)
+})
+
+pvals_bm = extract_match_pvals(mb1)
+
+pvals_bm_combined = c(pvals_bm$bm_t, pvals_bm$bm_ks)
+summary(pvals_bm$bm_t)
+summary(pvals_bm_combined)
+# Ignore NAs for KS-test on dichotomous variables.
+sd(pvals_bm_combined, na.rm=T)
+#print(summary(pvalues))
+hist(pvals_bm_combined, main="Before Matching: p-values from MatchBalance", xlab=paste0("Mean = ", round(mean(pvals_bm_combined, na.rm=T), 3)))
+
+
+# Match with replacement, use available cluster.
+conf$max_gens = 100
+conf$pop_size = 1000
+#conf$pop_size = 50
+conf$wait_gens = 5
+
+set.seed(1)
+
+# Time how long this takes.
+system.time({
+  gen1 = GenMatch(Tr=data_clean$treatment, X=data_clean[, balance_covars],
+                   estimand="ATE", replace=T, M=1, cluster=conf$cluster,
+                   max.generation=conf$max_gens, pop.size=conf$pop_size,
+                   wait.generations=conf$wait_gens, unif.seed = 436383,
+                   int.seed = 177784, print.level=0)
+})
+mat1 = Match(Y=data_clean$outcome, Tr=data_clean$treatment, X=data_clean[, balance_covars], estimand="ATE", Weight.matrix=gen1)
+summary(mat1)
+
+save(gen1, mat1, file="data/violence-genmatch-results.RData")
+
+# Review balance of the with-replacement match; suppress lengthy automatic output
+# DV is the treatment indicator. nboots should be at least 100.
+system.time({
+  mb2 = MatchBalance(treatment ~ ., data=data_clean, match.out=mat1, nboots=5000, print.level=0)
+})
+pvals_am = extract_match_pvals(mb2)
+pvals_am
+
+colMeans(pvals_am, na.rm=T)
+
+pvals_am_combined = c(pvals_am$am_t, pvals_am$am_ks)
+summary(pvals_bm_combined)
+summary(pvals_am_combined)
+
+summary(pvals_am$bm_t)
+summary(pvals_am$am_t)
+
+sd(pvals_bm_combined, na.rm=T)
+sd(pvals_am_combined, na.rm=T)
+
+hist(pvals_am_combined, main="After Matching: p-values from MatchBalance", xlab=paste0("Mean = ", round(mean(pvals_am_combined, na.rm=T), 3)))
+```
+
+```{r}
+
+stopCluster(conf$cluster)
+```
