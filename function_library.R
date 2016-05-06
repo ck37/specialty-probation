@@ -309,7 +309,7 @@ setup_parallelism = function(conf = NULL, type="either", allow_multinode = T,
 
     if (exists("conf") && !is.null(conf) && "num_cores" %in% names(conf)) {
       cores = conf$num_cores
-      cat("Using", cores, " local cores due to conf settings.\n")
+      cat("Using", cores, "local processes due to conf settings.\n")
     }
   }
 
