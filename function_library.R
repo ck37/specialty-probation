@@ -473,10 +473,16 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
   # Create xgboost models.
   xgb_libs = c()
   xgb_grid = NA
-  if (xgb) {
 
-    # Slower, ideal configuration search (intended for servers).
-    xgb_tune = list(ntrees = c(50, 200, 500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2, 0.4), minobspernode = c(10))
+  # Check for F to allow xgb to be T or a string.
+  if (xgb != F) {
+
+    if (xgb == "small") {
+      xgb_tune = list(ntrees = c(50, 500, 3000), max_depth = c(1, 3), shrinkage = c(0.01, 0.1, 0.2, 0.4), minobspernode = c(10))
+    } else {
+      # Slower, ideal configuration search (intended for servers).
+      xgb_tune = list(ntrees = c(50, 200, 500, 1000, 3000), max_depth = c(1, 2, 3), shrinkage = c(0.01, 0.1, 0.2, 0.4), minobspernode = c(10))
+     }
 
     # Faster, less ideal configuration search (intended for laptops):
     # BUT disable for now - we have so few observations that we can use the server version.
@@ -521,8 +527,8 @@ create_SL_lib = function(num_cols = NULL, xgb = T, rf = T, dsa = F, glmnet = T, 
 
   # TODO: see if we want to tweak the hyperparameters of any of these singular models.
   # Remove "SL.polymars", for now. (CK 5/4/16)
-  lib = c(glmnet_libs, xgb_libs, rf_libs, "SL.svm", "SL.bayesglm",
-          "SL.stepAIC", "SL.earth", "SL.rpartPrune", gam_libs)
+  lib = c(glmnet_libs, xgb_libs, rf_libs, gam_libs, "SL.svm", "SL.bayesglm",
+          "SL.ipredbagg", "SL.stepAIC", "SL.earth", "SL.rpartPrune")
 
   if (dsa) {
     # WARNING: super duper slow :/
