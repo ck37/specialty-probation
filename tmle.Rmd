@@ -35,8 +35,9 @@ dim(W_arrest)
 
 
 # Naive estimate
-summary(glm(any_arrest ~ treatment, data=data_arrest, family="binomial"))
-summary(glm(any_violence ~ treatment, data=data_violence, family="binomial"))
+summary(glm(any_arrest ~ treatment, data=data_arrest, family="gaussian"))
+summary(glm(any_violence ~ treatment, data=data_violence, family="gaussian"))
+
 (table("Tx"=data_arrest$treatment, "Arrest"=data_arrest$any_arrest, useNA="ifany"))
 
 # Save our data prior to analysis.
@@ -76,6 +77,7 @@ if (F) {
 ```{r cache=T, eval=T}
 
 system.time({
+  
   # Hide long output from stepAIC.
   out = capture.output({
     # Takes about 5-10 minutes.
@@ -95,6 +97,7 @@ save(result_arrest, file="data/tmle-arrest.RData")
 # Compare to manual TMLE.
 
 set.seed(1)
+
 system.time({
   # Takes about 2-10 minutes without outer cross-validation.
   # 10x that with outer cross-validation over 10 folds.
@@ -197,6 +200,7 @@ if ("qinit_cv" %in% names(result_arrest2)) {
 
 ```{r cache=T, eval=T}
 
+set.seed(1)
 
 system.time({
   # Hide long output from stepAIC.
@@ -214,6 +218,7 @@ save(result_violence, file="data/tmle-violence.RData")
 ```
 
 ```{r cache=T}
+
 set.seed(1)
 # Compare to our own code:
 
@@ -233,7 +238,6 @@ save(result_violence2, file="data/tmle-violence2.RData")
 
 ```{r cache=T}
 # We put this in a separate block so that we can modify without invalidating the analysis cache.
-
 
 # Review SL weights.
 result_violence2$qinit
