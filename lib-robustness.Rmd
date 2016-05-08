@@ -15,7 +15,10 @@ load_all_libraries()
 set.seed(1)
 load("data/tmle-data-prep.RData")
 cluster = setup_parallelism()
+library(ggplot2)
 ```
+
+## Arrest analysis.
 
 ```{r}
 
@@ -72,7 +75,7 @@ for (lib_i in 1:length(libs)) {
   results[[lib_i]] = result
 }
 
-save(results, file="data/lib-robustness-analysis.RData")
+save(results, file="data/lib-robustness-analysis-arrest.RData")
 ```
 
 ```{r}
@@ -83,7 +86,7 @@ colnames = c("psihat_ss", "psihat_iptw", "psihat_iptw_ht", "psihat_tmle", "tmle_
 length(colnames)
 lib_results = data.frame(matrix(nrow=length(results), ncol=length(colnames)))
 colnames(lib_results) = colnames
-lib_results
+
 for (i in 1:length(results)) {
   result = results[[i]]
   
@@ -117,3 +120,138 @@ lib_results
 ```
 
 Now create nice chart/table of results.
+
+```{r}
+theme_set(theme_light() + theme(plot.background = element_rect(color = "grey", fill="#f5f5f5")))
+p1 = ggplot(lib_results, mapping=aes(x=1:nrow(lib_results), y=psihat_tmle, ymin=tmle_lower, ymax=tmle_upper)) + geom_pointrange() + coord_flip() + xlab("SL library") + ylab("Arrest TMLE point estimate (influence 95% CI)") + 
+  scale_x_continuous(breaks = 1:nrow(lib_results), labels = 1:nrow(lib_results), trans="reverse")
+p1
+library(gridExtra)
+tt <- ttheme_default()#colhead=list(fg_params = list(parse=TRUE)))
+table_data = cbind(1:nrow(lib_results), lib_results[, c("qinit_ave", "qinit_sd", "ghat_ave", "ghat_sd")])
+colnames(table_data) = c("#", "qInit Ave.", "qInit SD", "gHat Ave.", "gHat SD")
+tbl = tableGrob(round(table_data, 3), rows=NULL, theme=tt)
+#plot(tbl)
+xtable(table_data[, -1], digits=3, caption="Library robustness - Arrest")
+#grid.arrange(p1, tbl, ncol=2, as.table=T)#, heights=c(3, 1))
+ggsave(filename="visuals/arrest-lib-robustness.png", width=4, height=3)
+```
+
+## Violence analysis.
+
+```{r}
+
+# Create multiple library configurations and see how estimates vary.
+# Also try to diagnose model fitting.
+nc = ncol(W_violence)
+# Minimum library - just a glmnet.
+lib1 = list(lib=c("SL.glmnet"))
+lib2 = create_SL_lib(nc, xgb=F, rf=F, glmnet=F, gam=F, detailed_names = T)
+lib3 = create_SL_lib(nc, xgb=F, rf=F, glmnet=T, glmnet_size=5, gam=F, detailed_names = T)
+lib4 = create_SL_lib(nc, xgb=F, rf=T, glmnet=T, glmnet_size=5, gam=F, detailed_names = T)
+lib5 = create_SL_lib(nc, xgb=F, rf=T, glmnet=T, glmnet_size=5, gam=T, detailed_names = T)
+lib6 = create_SL_lib(nc, xgb=F, rf=T, glmnet=T, glmnet_size=11, gam=T, detailed_names = T)
+# TODO: one more version with a few XGB configs.
+# Full library.
+lib7 = create_SL_lib(nc, xgb=T, rf=T, glmnet=T, glmnet_size=11, gam=T, detailed_names = T)
+
+libs = list(lib1, lib2, lib3, lib4, lib5, lib6, lib7)
+
+```
+
+```{r cache=T}
+
+set.seed(2)
+# Shorten for now.
+# libs = libs[1:3]
+results = vector("list", length(libs))
+cv_folds = 15
+for (lib_i in 1:length(libs)) {
+  lib_obj = libs[[lib_i]]
+  sl_lib = lib_obj$lib
+  cat("\nLib", lib_i, "with size:", length(sl_lib), "\n")
+  
+  # estimate effects.
+  # First try without outer CV to speed up completion time.
+  time = system.time({
+  result = estimate_effect(Y=data_violence$any_violence,
+                      A=data_violence$treatment, W=W_violence,
+                      parallel = "multicore", sl_lib = sl_lib,
+                      cluster=cluster, cv_folds = cv_folds,
+                      crossvalidate=T, outer_cv_folds = 10)
+  })
+  # Save how long it took.
+  result$time = time
+  print(time)
+ 
+  # Show extra info if we ran outer cross-validation. 
+  if ("qinit_cv" %in% names(result)) {
+    print(summary(result$qinit_cv))
+    print(summary(result$ghat_cv))
+  }
+  
+  # Save results.
+  results[[lib_i]] = result
+}
+
+save(results, file="data/lib-robustness-analysis-violence.RData")
+```
+
+```{r}
+# More review of results here.
+
+# Compile results into a table.
+colnames = c("psihat_ss", "psihat_iptw", "psihat_iptw_ht", "psihat_tmle", "tmle_upper", "tmle_lower", "tmle_p", "max_gwgt", "qinit_ave", "qinit_sd", "ghat_ave", "ghat_sd", "time_elapsed", "time_user")
+length(colnames)
+lib_results = data.frame(matrix(nrow=length(results), ncol=length(colnames)))
+colnames(lib_results) = colnames
+
+for (i in 1:length(results)) {
+  result = results[[i]]
+  
+  # Extract point estimates.
+  lib_results[i, ]$psihat_ss = result$psihat_ss
+  lib_results[i, ]$psihat_iptw = result$psihat_iptw
+  lib_results[i, ]$psihat_iptw_ht = result$psihat_iptw_ht
+  lib_results[i, ]$psihat_tmle = result$psihat_tmle
+          
+  # Extract TMLE CI
+  lib_results[i, ]$tmle_lower = result$tmle_ci[1]
+  lib_results[i, ]$tmle_upper = result$tmle_ci[2]
+  # Extract TMLE p-value
+  lib_results[i, ]$tmle_p = result$tmle_p
+  # Extract max g-weight.
+  lib_results[i, ]$max_gwgt = max(result$weights)
+  
+  # Ave SL risk qInit
+  lib_results[i, ]$qinit_ave = mean(summary(result$qinit_cv)$Risk.SL)
+  lib_results[i, ]$qinit_sd = sd(summary(result$qinit_cv)$Risk.SL)
+  # Ave SL risk gHat
+  lib_results[i, ]$ghat_ave = mean(summary(result$ghat_cv)$Risk.SL)
+  lib_results[i, ]$ghat_sd = sd(summary(result$ghat_cv)$Risk.SL)
+  
+  # Time to calculate
+  lib_results[i, ]$time_elapsed = result$time[["elapsed"]]
+  lib_results[i, ]$time_user = result$time[["user.child"]]
+}
+
+lib_results
+```
+
+Now create nice chart/table of results.
+
+```{r}
+theme_set(theme_light() + theme(plot.background = element_rect(color = "grey", fill="#f5f5f5")))
+p1 = ggplot(lib_results, mapping=aes(x=1:nrow(lib_results), y=psihat_tmle, ymin=tmle_lower, ymax=tmle_upper)) + geom_pointrange() + coord_flip() + xlab("SL library") + ylab("Violence TMLE point estimate (influence 95% CI)") + 
+  scale_x_continuous(breaks = 1:nrow(lib_results), labels = 1:nrow(lib_results), trans="reverse")
+p1
+library(gridExtra)
+tt <- ttheme_default()#colhead=list(fg_params = list(parse=TRUE)))
+table_data = cbind(1:nrow(lib_results), lib_results[, c("qinit_ave", "qinit_sd", "ghat_ave", "ghat_sd")])
+colnames(table_data) = c("#", "qInit Ave.", "qInit SD", "gHat Ave.", "gHat SD")
+tbl = tableGrob(round(table_data, 3), rows=NULL, theme=tt)
+#plot(tbl)
+xtable(table_data[, -1], digits=3, caption="Library robustness - Violence")
+#grid.arrange(p1, tbl, ncol=2, as.table=T)#, heights=c(3, 1))
+ggsave(filename="visuals/violence-lib-robustness.png", width=4, height=3)
+```
