@@ -46,28 +46,9 @@ save(W_violence, W_arrest, data_violence, data_arrest, file="data/tmle-data-prep
 
 ```{r}
 # Set dsa=T to re-enable DSA, but it will slow down the modeling significantly.
-custom_lib = create_SL_lib(num_cols = ncol(W_arrest), detailed_names = T)
+custom_lib = create_SL_lib(num_cols = ncol(W_arrest), detailed_names = T, xgb="small")
 sl_lib = custom_lib$lib
 sl_lib
-
-if (F) {
-  # Manual DSA test.
-  # Turn off xgb and RF to speed up the test.
-  custom_lib = create_SL_lib(num_cols = ncol(W_arrest), detailed_names = T, dsa=T, xgb=F, rf=F)
-  sl_lib = custom_lib$lib
-  sl_lib
-  
-  set.seed(1)
-  system.time({
-  # Takes about 6 minutes on 4 cores without outer cross-validation, or XGB/RF.
-  dsa_arrest = estimate_effect(Y=data_arrest$any_arrest,
-                      A=data_arrest$treatment, W=W_arrest,
-                      parallel = "multicore", sl_lib = sl_lib,
-                      cluster=cluster, cv_folds = cv_folds,
-                      crossvalidate=F, outer_cv_folds = 10)
-  })
-  dsa_arrest
-}
 ```
 
 ## TMLE
