@@ -640,3 +640,84 @@ extract_match_pvals = function(mb) {
   pvals
 }
 
+extract_library_analysis = function(results) {
+  # Compile results into a table.
+  colnames = c("psihat_ss", "psihat_iptw", "psihat_iptw_ht", "psihat_tmle", "tmle_upper", "tmle_lower", "tmle_p", "max_gwgt", "qinit_ave", "qinit_se", "ghat_ave", "ghat_se", "time_elapsed", "time_user")
+  length(colnames)
+  lib_results = data.frame(matrix(nrow=length(results), ncol=length(colnames)))
+  colnames(lib_results) = colnames
+
+  for (i in 1:length(results)) {
+    result = results[[i]]
+
+    # Extract point estimates.
+    lib_results[i, ]$psihat_ss = result$psihat_ss
+    lib_results[i, ]$psihat_iptw = result$psihat_iptw
+    lib_results[i, ]$psihat_iptw_ht = result$psihat_iptw_ht
+    lib_results[i, ]$psihat_tmle = result$psihat_tmle
+
+    # Extract TMLE CI
+    lib_results[i, ]$tmle_lower = result$tmle_ci[1]
+    lib_results[i, ]$tmle_upper = result$tmle_ci[2]
+    # Extract TMLE p-value
+    lib_results[i, ]$tmle_p = result$tmle_p
+    # Extract max g-weight.
+    lib_results[i, ]$max_gwgt = max(result$weights)
+
+    # Ave SL risk qInit
+    #lib_results[i, ]$qinit_ave = mean(summary(result$qinit_cv)$Risk.SL)
+    if ("qinit_cv" %in% names(result)) {
+      lib_results[i, ]$qinit_ave = summary(result$qinit_cv)$Table$Ave[1]
+      #lib_results[i, ]$qinit_sd = sd(summary(result$qinit_cv)$Risk.SL)
+      lib_results[i, ]$qinit_se = summary(result$qinit_cv)$Table$se[1]
+      # Ave SL risk gHat
+      #lib_results[i, ]$ghat_ave = mean(summary(result$ghat_cv)$Risk.SL)
+      lib_results[i, ]$ghat_ave = summary(result$ghat_cv)$Table$Ave[1]
+      #lib_results[i, ]$ghat_sd = sd(summary(result$ghat_cv)$Risk.SL)
+      lib_results[i, ]$ghat_se = summary(result$ghat_cv)$Table$se[1]
+
+      # Time to calculate
+      lib_results[i, ]$time_elapsed = result$time[["elapsed"]]
+      lib_results[i, ]$time_user = result$time[["user.child"]]
+    }
+  }
+  lib_results
+}
+
+generate_tmle_results = function(lib_results,
+                                 chart_ylab = "TMLE point estimate (influence 95% CI)",
+                                 caption="Library robustness",
+                                 chart_file = "lib-robustness.png") {
+
+  theme_set(theme_light() + theme(plot.background = element_rect(color = "grey", fill="#f5f5f5")))
+  p1 = ggplot(lib_results, mapping=aes(x=1:nrow(lib_results), y=psihat_tmle, ymin=tmle_lower, ymax=tmle_upper)) + geom_pointrange() + coord_flip() + xlab("SL library") + ylab(chart_ylab) +
+    scale_x_continuous(breaks = 1:nrow(lib_results), labels = 1:nrow(lib_results), trans="reverse")
+  print(p1)
+  library(gridExtra)
+  tt <- ttheme_default()#colhead=list(fg_params = list(parse=TRUE)))
+  table_data = cbind(1:nrow(lib_results), lib_results[, c("qinit_ave", "qinit_se", "ghat_ave", "ghat_se")])
+  colnames(table_data) = c("#", "qInit Ave.", "qInit SE", "hat(G) Ave.", "hat(G) SE")
+  tbl = tableGrob(round(table_data, 3), rows=NULL, theme=tt)
+  #plot(tbl)
+  print(xtable(table_data[, -1], digits=3, caption=caption))
+  #grid.arrange(p1, tbl, ncol=2, as.table=T)#, heights=c(3, 1))
+  ggsave(filename=paste0("visuals/", chart_file), width=4, height=3)
+}
+
+create_library_seq = function(nc) {
+  # Minimum library - just a glmnet.
+  lib1 = list(lib=c("SL.glmnet", "SL.mean"))
+  lib2 = list(lib=c("SL.glmnet", "SL.mean", "SL.stepAIC", "SL.earth", "SL.rpartPrune"))
+  lib3 = create_SL_lib(nc, xgb=F, rf=F, glmnet=F, gam=F, detailed_names = T)
+  lib4 = create_SL_lib(nc, xgb=F, rf=F, glmnet=T, glmnet_size=5, gam=F, detailed_names = T)
+  lib5 = create_SL_lib(nc, xgb=F, rf=T, glmnet=T, glmnet_size=5, gam=F, detailed_names = T)
+  lib6 = create_SL_lib(nc, xgb=F, rf=T, glmnet=T, glmnet_size=5, gam=T, detailed_names = T)
+  lib7 = create_SL_lib(nc, xgb=F, rf=T, glmnet=T, glmnet_size=11, gam=T, detailed_names = T)
+  # TODO: one more version with a few XGB configs.
+  lib8 = create_SL_lib(nc, xgb="small", rf=T, glmnet=T, glmnet_size=11, gam=T, detailed_names = T)
+  # Full library.
+  lib9 = create_SL_lib(nc, xgb=T, rf=T, glmnet=T, glmnet_size=11, gam=T, detailed_names = T)
+
+  libs = list(lib1, lib2, lib3, lib4, lib5, lib6, lib7, lib8, lib9)
+  libs
+}
