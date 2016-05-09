@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 source("function_library.R")
 load_all_libraries()
 set.seed(1)
-load("data/tmle-data-prep.RData")
+load("data/analysis-dataset.RData")
 cluster = setup_parallelism()
 library(ggplot2)
 ```
@@ -25,6 +25,7 @@ library(ggplot2)
 # Create multiple library configurations and see how estimates vary.
 # Also try to diagnose model overfitting.
 libs = create_library_seq(ncol(W_arrest))
+length(libs)
 ```
 
 ```{r cache=T}
