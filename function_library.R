@@ -108,6 +108,7 @@ Mode = function(x) {
 
 estimate_effect = function(Y, A, W,
        family = "binomial", cv_folds = 10, digits = 5,
+       qmethod="method.NNLS", gmethod="method.NNLS",
        sl_lib = c("SL.glmnet", "SL.step", "SL.glm.interaction"),
        parallel = NULL, cluster = NULL, crossvalidate = F, outer_cv_folds = 10) {
 
@@ -157,7 +158,8 @@ estimate_effect = function(Y, A, W,
   newdata = rbind(x, x1, x0)
 
 
-  qinit = sl_fn(Y=Y, X=x, newX=newdata, cvControl = cv_ctrl, SL.library=sl_lib, family=family)
+  qinit = sl_fn(Y=Y, X=x, newX=newdata, cvControl = cv_ctrl, SL.library=sl_lib,
+                family=family, method=qmethod)
   QbarAW = qinit$SL.predict[1:n]
   Qbar1W = qinit$SL.predict[(n+1):(2*n)]
   Qbar0W = qinit$SL.predict[(2*n+1):(3*n)]
@@ -167,7 +169,8 @@ estimate_effect = function(Y, A, W,
 
   if (crossvalidate) {
     # No newdata argument in this call.
-    qinit_cv = cv_sl_fn(Y=Y, X=x, cvControl = cv_ctrl, SL.library=sl_lib, family=family)
+    qinit_cv = cv_sl_fn(Y=Y, X=x, cvControl = cv_ctrl, SL.library=sl_lib,
+                        family=family, method=qmethod)
   }
 
   #######
@@ -180,7 +183,8 @@ estimate_effect = function(Y, A, W,
   # Stop early if psihat_ss is NA.
   stopifnot(!is.na(psihat_ss))
 
-  gHatSL = sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl, family="binomial")
+  gHatSL = sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl,
+                 family="binomial", method=gmethod)
   gHat1W = gHatSL$SL.predict
   gHat0W = 1 - gHat1W
   # Check if gHat1W is all NAs. If so, the model fitting failed.
@@ -191,7 +195,8 @@ estimate_effect = function(Y, A, W,
   gHatAW[A == 0] = gHat0W[A == 0]
 
   if (crossvalidate) {
-    gHatSL_cv = cv_sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl, family="binomial")
+    gHatSL_cv = cv_sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl,
+                         family="binomial", method=gmethod)
   }
 
   #########
@@ -258,6 +263,7 @@ estimate_effect = function(Y, A, W,
   # Return the results.
   results = list(qinit = qinit, ghat = gHatSL, influence_curve = ic,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
+                 qmethod=qmethod, gmethod=gmethod,
                  psihat_iptw_ht = psihat_iptw_ht, psihat_tmle = psihat_tmle,
                  tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p, weights=wgt)
 
