@@ -263,7 +263,7 @@ estimate_effect = function(Y, A, W,
                  tmle_se = tmle$ic_se, tmle_ci = tmle$ci, tmle_p = tmle$tmle_p,
                  psihat_tmle_trunc = tmle_bounded$psihat_tmle,
                  tmle_se_trunc = tmle_bounded$ic_se,
-                 tmle_p_trunc = tmle_bounded$p,
+                 tmle_p_trunc = tmle_bounded$tmle_p,
                  weights=wgt, max_gweight = max_gweight, time=time)
 
   if (crossvalidate) {
@@ -718,7 +718,7 @@ extract_library_analysis = function(results) {
     lib_results[i, ]$tmle_p = result$tmle_p
 
     # Extract max g-weight.
-    lib_results[i, ]$max_gwgt = result$max_gweight
+    lib_results[i, ]$max_gweight = result$max_gweight
 
     # Truncated results.
     lib_results[i, ]$psihat_tmle_trunc = result$psihat_tmle_trunc
