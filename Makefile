@@ -18,4 +18,4 @@ auc:  data lib-rob-auc.Rmd function_library.R explore-variables.Rmd
 	Rscript -e "markdown::markdownToHTML('lib-rob-auc.md', 'lib-rob-auc.html')"
 
 clean:
-	rm -f data/* cache/*
+	rm -rf data/* cache/* tmle_cache/*
