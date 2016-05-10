@@ -175,7 +175,7 @@ estimate_effect = function(Y, A, W,
   if (crossvalidate) {
     # No newdata argument in this call.
     qinit_cv = cv_sl_fn(Y=Y, X=x, cvControl = cv_ctrl, SL.library=sl_lib,
-                        family=family, method=qmethod)
+                        family=family)#, method=qmethod)
   }
 
   #######
@@ -201,7 +201,7 @@ estimate_effect = function(Y, A, W,
 
   if (crossvalidate) {
     gHatSL_cv = cv_sl_fn(Y=A, X=W, SL.library=sl_lib, cvControl = cv_ctrl,
-                         family="binomial", method=gmethod)
+                         family="binomial")#, method=gmethod)
   }
 
 
