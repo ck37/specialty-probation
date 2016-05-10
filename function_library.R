@@ -116,6 +116,8 @@ estimate_effect = function(Y, A, W,
        sl_lib = c("SL.glmnet", "SL.step", "SL.glm.interaction"),
        parallel = NULL, cluster = NULL, crossvalidate = F, outer_cv_folds = 10) {
 
+  # Time the full execution of this function.
+  time = system.time({
   ##########
   # Setup parallel SL if we can.
   ##########
@@ -248,6 +250,8 @@ estimate_effect = function(Y, A, W,
 
   cat("Psihat TMLE (truncated):", round(tmle_bounded$psihat_tmle, digits), "\n")
 
+  }) # finish timing.
+
   #########
   # Finalization.
 
@@ -260,7 +264,7 @@ estimate_effect = function(Y, A, W,
                  psihat_tmle_trunc = tmle_bounded$psihat_tmle,
                  tmle_se_trunc = tmle_bounded$ic_se,
                  tmle_p_trunc = tmle_bounded$p,
-                 weights=wgt, max_gweight = max_gweight)
+                 weights=wgt, max_gweight = max_gweight, time=time)
 
   if (crossvalidate) {
     results = c(results, list(qinit_cv = qinit_cv, ghat_cv = gHatSL_cv))
