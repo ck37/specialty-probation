@@ -232,6 +232,12 @@ estimate_effect = function(Y, A, W,
   gHat1W_bounded = bound(gHat1W, gbounds)
   gHat0W_bounded = bound(gHat0W, gbounds)
 
+  # This takes the per-obs max of 1/gHat1W and 1/gHat0W.
+  max_gweight = max(pmax(1/gHatAW, 1/(1 - gHatAW)))
+
+  cat("Max g-weight:", round(max_gweight, 1), "\n")
+  cat("Max g-weight (truncated):", round(max(pmax(1/gHatAW_bounded, 1/(1 - gHatAW_bounded))), 1), "\n")
+
   tmle = calculate_tmle(A=A, Y=Y, family=family, QbarAW,
                         Qbar1W, Qbar0W, gHatAW, gHat1W, gHat0W)
 
@@ -245,9 +251,6 @@ estimate_effect = function(Y, A, W,
   #########
   # Finalization.
 
-  cat("Max g-weight:", round(max(pmax(1/gHatAW, 1/(1 - gHatAW))), 1), "\n")
-  cat("Max g-weight (truncated):", round(max(pmax(1/gHatAW_bounded, 1/(1 - gHatAW_bounded))), 1), "\n")
-
   # Return the results.
   results = list(qinit = qinit, ghat = gHatSL, influence_curve = tmle$ic,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
@@ -257,7 +260,7 @@ estimate_effect = function(Y, A, W,
                  psihat_tmle_trunc = tmle_bounded$psihat_tmle,
                  tmle_se_trunc = tmle_bounded$ic_se,
                  tmle_p_trunc = tmle_bounded$p,
-                 weights=wgt)
+                 weights=wgt, max_gweight = max_gweight)
 
   if (crossvalidate) {
     results = c(results, list(qinit_cv = qinit_cv, ghat_cv = gHatSL_cv))
@@ -685,7 +688,12 @@ extract_match_pvals = function(mb) {
 
 extract_library_analysis = function(results) {
   # Compile results into a table.
-  colnames = c("psihat_ss", "psihat_iptw", "psihat_iptw_ht", "psihat_tmle", "tmle_upper", "tmle_lower", "tmle_p", "max_gwgt", "qinit_ave", "qinit_se", "ghat_ave", "ghat_se", "time_elapsed", "time_user")
+  colnames = c("psihat_ss", "psihat_iptw", "psihat_iptw_ht", "psihat_tmle",
+               "tmle_upper", "tmle_lower", "tmle_p", "max_gweight",
+               "psihat_tmle_trunc", "tmle_se_trunc", "tmle_p_trunc",
+               "qinit_ave", "qinit_se", "ghat_ave", "ghat_se",
+               "time_elapsed", "time_user")
+
   length(colnames)
   lib_results = data.frame(matrix(nrow=length(results), ncol=length(colnames)))
   colnames(lib_results) = colnames
@@ -704,8 +712,14 @@ extract_library_analysis = function(results) {
     lib_results[i, ]$tmle_upper = result$tmle_ci[2]
     # Extract TMLE p-value
     lib_results[i, ]$tmle_p = result$tmle_p
+
     # Extract max g-weight.
-    lib_results[i, ]$max_gwgt = max(result$weights)
+    lib_results[i, ]$max_gwgt = result$max_gweight
+
+    # Truncated results.
+    lib_results[i, ]$psihat_tmle_trunc = result$psihat_tmle_trunc
+    lib_results[i, ]$tmle_se_trunc = result$tmle_se_trunc
+    lib_results[i, ]$tmle_p_trunc = result$tmle_p_trunc
 
     # Ave SL risk qInit
     #lib_results[i, ]$qinit_ave = mean(summary(result$qinit_cv)$Risk.SL)
