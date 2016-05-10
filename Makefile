@@ -13,5 +13,9 @@ robust:  data lib-robustness.Rmd function_library.R explore-variables.Rmd
 	nice Rscript -e "knitr::knit('lib-robustness.Rmd')" > lib-robustness.Rout 2>&1
 	Rscript -e "markdown::markdownToHTML('lib-robustness.md', 'lib-robustness.html')"
 
+auc:  data lib-rob-auc.Rmd function_library.R explore-variables.Rmd
+	nice Rscript -e "knitr::knit('lib-rob-auc.Rmd')" > lib-rob-auc.Rout 2>&1
+	Rscript -e "markdown::markdownToHTML('lib-rob-auc.md', 'lib-rob-auc.html')"
+
 clean:
 	rm -f data/* cache/*
