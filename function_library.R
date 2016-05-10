@@ -157,7 +157,6 @@ estimate_effect = function(Y, A, W,
   x0$A = 0
   newdata = rbind(x, x1, x0)
 
-
   qinit = sl_fn(Y=Y, X=x, newX=newdata, cvControl = cv_ctrl, SL.library=sl_lib,
                 family=family, method=qmethod)
   QbarAW = qinit$SL.predict[1:n]
