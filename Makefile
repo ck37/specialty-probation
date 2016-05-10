@@ -14,4 +14,4 @@ robust:  data lib-robustness.Rmd function_library.R explore-variables.Rmd
 	Rscript -e "markdown::markdownToHTML('lib-robustness.md', 'lib-robustness.html')"
 
 clean:
-	rm -f data/* cache/*
+	rm -rf data/* cache/* tmle_cache/*
