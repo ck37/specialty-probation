@@ -106,8 +106,12 @@ Mode = function(x) {
   ux[tab == max(tab)]
 }
 
+bound = function(x, bounds) {
+  pmin(pmax(x, min(bounds)), max(bounds))
+}
+
 estimate_effect = function(Y, A, W,
-       family = "binomial", cv_folds = 10, digits = 5,
+       family = "binomial", cv_folds = 10, digits = 5, gbounds = 0.025,
        qmethod="method.NNLS", gmethod="method.NNLS",
        sl_lib = c("SL.glmnet", "SL.step", "SL.glm.interaction"),
        parallel = NULL, cluster = NULL, crossvalidate = F, outer_cv_folds = 10) {
@@ -198,6 +202,8 @@ estimate_effect = function(Y, A, W,
                          family="binomial", method=gmethod)
   }
 
+
+
   #########
   # IPTW estimator (not stabilized)
   #########
@@ -215,6 +221,54 @@ estimate_effect = function(Y, A, W,
 
   cat("Psihat IPTW HT:", round(psihat_iptw_ht, digits), "\n")
 
+  #########
+  # Generate bounded gHats for comparison to the unbounded version.
+  #########
+
+  if (length(gbounds) == 1) {
+    gbounds = c(gbounds, 1 - gbounds)
+  }
+  gHatAW_bounded = bound(gHatAW, gbounds)
+  gHat1W_bounded = bound(gHat1W, gbounds)
+  gHat0W_bounded = bound(gHat0W, gbounds)
+
+  tmle = calculate_tmle(A=A, Y=Y, family=family, QbarAW,
+                        Qbar1W, Qbar0W, gHatAW, gHat1W, gHat0W)
+
+  cat("Psihat TMLE:", round(tmle$psihat_tmle, digits), "\n")
+
+  tmle_bounded = calculate_tmle(A=A, Y=Y, family=family, QbarAW, Qbar1W, Qbar0W,
+                                gHatAW_bounded, gHat1W_bounded, gHat0W_bounded)
+
+  cat("Psihat TMLE (truncated):", round(tmle_bounded$psihat_tmle, digits), "\n")
+
+  #########
+  # Finalization.
+
+  cat("Max g-weight:", round(max(pmax(1/gHatAW, 1/(1 - gHatAW))), 1), "\n")
+  cat("Max g-weight (truncated):", round(max(pmax(1/gHatAW_bounded, 1/(1 - gHatAW_bounded))), 1), "\n")
+
+  # Return the results.
+  results = list(qinit = qinit, ghat = gHatSL, influence_curve = tmle$ic,
+                 psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
+                 qmethod=qmethod, gmethod=gmethod, gHatAW=gHatAW,
+                 psihat_iptw_ht = psihat_iptw_ht, psihat_tmle = tmle$psihat_tmle,
+                 tmle_se = tmle$ic_se, tmle_ci = tmle$ci, tmle_p = tmle$tmle_p,
+                 psihat_tmle_trunc = tmle_bounded$psihat_tmle,
+                 tmle_se_trunc = tmle_bounded$ic_se,
+                 tmle_p_trunc = tmle_bounded$p,
+                 weights=wgt)
+
+  if (crossvalidate) {
+    results = c(results, list(qinit_cv = qinit_cv, ghat_cv = gHatSL_cv))
+  }
+
+  class(results) = "estimate_effect"
+  results
+}
+
+calculate_tmle = function(A, Y, family, QbarAW, Qbar1W, Qbar0W, gHatAW, gHat1W, gHat0W) {
+  n = length(A)
 
   #########
   # Clever covariate calculations.
@@ -236,7 +290,6 @@ estimate_effect = function(Y, A, W,
   # TMLE estimate
   ##########
   psihat_tmle = mean(Qbar1W_star - Qbar0W_star)
-  cat("Psihat TMLE:", round(psihat_tmle, digits), "\n")
 
   ###########
   # Efficient inference (Lab 6)
@@ -254,23 +307,8 @@ estimate_effect = function(Y, A, W,
   # P-value
   tmle_p = 2 * pnorm(-abs(psihat_tmle / ic_se), lower.tail=T)
 
-  #########
-  # Finalization.
+  results = list(ic=ic, ic_se=ic_se, ci=ci, tmle_p=tmle_p, psihat_tmle=psihat_tmle)
 
-  cat("Max g-weight:", round(max(wgt), 1), "\n")
-
-  # Return the results.
-  results = list(qinit = qinit, ghat = gHatSL, influence_curve = ic,
-                 psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
-                 qmethod=qmethod, gmethod=gmethod, gHatAW=gHatAW,
-                 psihat_iptw_ht = psihat_iptw_ht, psihat_tmle = psihat_tmle,
-                 tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p, weights=wgt)
-
-  if (crossvalidate) {
-    results = c(results, list(qinit_cv = qinit_cv, ghat_cv = gHatSL_cv))
-  }
-
-  class(results) = "estimate_effect"
   results
 }
 
