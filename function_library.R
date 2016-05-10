@@ -262,7 +262,7 @@ estimate_effect = function(Y, A, W,
   # Return the results.
   results = list(qinit = qinit, ghat = gHatSL, influence_curve = ic,
                  psihat_ss = psihat_ss, psihat_iptw = psihat_iptw,
-                 qmethod=qmethod, gmethod=gmethod,
+                 qmethod=qmethod, gmethod=gmethod, gHatAW=gHatAW,
                  psihat_iptw_ht = psihat_iptw_ht, psihat_tmle = psihat_tmle,
                  tmle_se = ic_se, tmle_ci = ci, tmle_p = tmle_p, weights=wgt)
 

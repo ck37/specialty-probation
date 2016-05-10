@@ -57,7 +57,7 @@ sl_lib
 
 ```{r cache=T, eval=T}
 
-system.time({
+time = system.time({
   
   # Hide long output from stepAIC.
   out = capture.output({
@@ -67,6 +67,7 @@ system.time({
                   Q.SL.library = sl_lib, g.SL.library = sl_lib)
   })
 })
+result_arrest$time = time
 
 # Very significant reduction in arrest rate.
 result_arrest
@@ -79,7 +80,7 @@ save(result_arrest, file="data/tmle-arrest.RData")
 
 set.seed(1)
 
-system.time({
+time = system.time({
   # Takes about 2-10 minutes without outer cross-validation.
   # 10x that with outer cross-validation over 10 folds.
   result_arrest2 = estimate_effect(Y=data_arrest$any_arrest,
@@ -88,6 +89,7 @@ system.time({
                       cluster=cluster, cv_folds = cv_folds,
                       crossvalidate=T, outer_cv_folds = 10)
 })
+result_arrest2$time = time
 result_arrest2
 
 save(result_arrest2, file="data/tmle-arrest2.RData")
@@ -105,7 +107,9 @@ cat("Review distribution of Ghat.\n")
 summary(result_arrest2$ghat$SL.predict)
 
 cat("Review distribution of weights (1/Ghat).\n")
-wgts = 1/result_arrest2$ghat$SL.predict
+
+# Examine 1/gHat1W and 1/gHat0W.
+wgts = c(1/result_arrest2$gHatAW, 1/(1-result_arrest2$gHatAW))
 summary(wgts)
 # Review 10 highest weights.
 wgts[order(wgts, decreasing=T)][1:10]
@@ -183,13 +187,14 @@ if ("qinit_cv" %in% names(result_arrest2)) {
 
 set.seed(1)
 
-system.time({
+time = system.time({
   # Hide long output from stepAIC.
   out = capture.output({
     # Takes about 5-10 minutes on CK's laptop.
     result_violence = tmle(Y=data_violence$any_violence, A=data_violence$treatment, W=W_violence, family="binomial", Q.SL.library = sl_lib, g.SL.library = sl_lib)
   })
 })
+result_violence$time = time
 
 # No effect on violence.
 result_violence
@@ -203,7 +208,7 @@ save(result_violence, file="data/tmle-violence.RData")
 set.seed(1)
 # Compare to our own code:
 
-system.time({
+time = system.time({
   # Takes about 2-10 minutes without outer cross-validation.
   # 10x that with outer cross-validation over 10 folds.
   result_violence2 = estimate_effect(Y=data_violence$any_violence, 
@@ -212,6 +217,7 @@ system.time({
                           cv_folds = cv_folds, cluster=cluster,
       	  	  						crossvalidate=T, outer_cv_folds = 10)
 })
+result_violence2$time = time
 result_violence2
 
 save(result_violence2, file="data/tmle-violence2.RData")
