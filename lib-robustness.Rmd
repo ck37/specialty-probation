@@ -42,16 +42,12 @@ for (lib_i in 1:length(libs)) {
   
   # estimate effects.
   # First try without outer CV to speed up completion time.
-  time = system.time({
   result = estimate_effect(Y=data_arrest$any_arrest,
                       A=data_arrest$treatment, W=W_arrest,
                       parallel = "multicore", sl_lib = sl_lib,
                       cluster=cluster, cv_folds = cv_folds,
                       crossvalidate=T, outer_cv_folds = 10)
-  })
-  # Save how long it took.
-  result$time = time
-  print(time)
+  print(result$time)
  
   # Show extra info if we ran outer cross-validation. 
   if ("qinit_cv" %in% names(result)) {
@@ -100,17 +96,12 @@ for (lib_i in 1:length(libs)) {
   cat("\nLib", lib_i, "with size:", length(sl_lib), "\n")
   
   # estimate effects.
-  # First try without outer CV to speed up completion time.
-  time = system.time({
   result = estimate_effect(Y=data_violence$any_violence,
                       A=data_violence$treatment, W=W_violence,
                       parallel = "multicore", sl_lib = sl_lib,
                       cluster=cluster, cv_folds = cv_folds,
                       crossvalidate=T, outer_cv_folds = 10)
-  })
-  # Save how long it took.
-  result$time = time
-  print(time)
+  print(result$time)
  
   # Show extra info if we ran outer cross-validation. 
   if ("qinit_cv" %in% names(result)) {
