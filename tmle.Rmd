@@ -119,7 +119,7 @@ ggsave(filename="visuals/gwgts-arrest.png")
 qplot(result_arrest2$ghat$SL.predict) + geom_density() + xlab("gHat1W distribution")
 ggsave(filename="visuals/ghat-arrest.png")
 
-if ("qinit_cv" %in% names(result_arrest2)) {
+if (is.element("qinit_cv", names(result_arrest2))) {
 	# Review outer cross-validation results.
   sum = summary(result_arrest2$qinit_cv)
   # Reorder by ascending risk.
@@ -145,7 +145,7 @@ if ("qinit_cv" %in% names(result_arrest2)) {
 ```{r cache=T, results="asis"}
 # Output the weight tables in a separate block so that we can set results=asis.
 
-if ("qinit_cv" %in% names(result_arrest2)) {
+if (is.element("qinit_cv", names(result_arrest2))) {
 	# Review outer cross-validation results.
   
   # Qinit SL meta-weights
@@ -246,7 +246,7 @@ ggsave(filename="visuals/gwgts-violence.png")
 qplot(result_violence2$ghat$SL.predict) + geom_density() + xlab("gHat1W distribution")
 ggsave(filename="visuals/ghat-violence.png")
 
-if ("qinit_cv" %in% names(result_violence2)) {
+if (is.element("qinit_cv", names(result_violence2))) {
 	# Review outer cross-validation results.
   sum = summary(result_violence2$qinit_cv)
   # Reorder by ascending risk.
@@ -272,7 +272,7 @@ if ("qinit_cv" %in% names(result_violence2)) {
 ```{r cache=T, results="asis"}
 # Output the weight tables in a separate block so that we can set results=asis.
 
-if ("qinit_cv" %in% names(result_violence2)) {
+if (is.element("qinit_cv", names(result_violence2))) {
 	# Review outer cross-validation results.
   
   # Qinit SL meta-weights.
