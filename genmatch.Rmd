@@ -73,7 +73,8 @@ stopifnot(nrow(data_clean) == nrow(data))
 # DV is the treatment indicator
 # nboots should be at least 100.
 system.time({
-  mb1 = MatchBalance(treatment ~ ., data=data_clean, nboots=5000, print.level=0)
+  # Exclude the outcome variable, which is the first column.
+  mb1 = MatchBalance(treatment ~ ., data=data_clean[, -1], nboots=5000, print.level=0)
 })
 
 pvals_bm = extract_match_pvals(mb1)
@@ -111,7 +112,8 @@ save(gen1, mat1, file="data/arrest-genmatch-results.RData")
 # Review balance of the with-replacement match; suppress lengthy automatic output
 # DV is the treatment indicator. nboots should be at least 100.
 system.time({
-  mb2 = MatchBalance(treatment ~ ., data=data_clean, match.out=mat1, nboots=5000, print.level=0)
+  # Exclude the outcome variable, which is the first column.
+  mb2 = MatchBalance(treatment ~ ., data=data_clean[, -1], match.out=mat1, nboots=5000, print.level=0)
 })
 pvals_am = extract_match_pvals(mb2)
 pvals_am
@@ -179,7 +181,8 @@ stopifnot(nrow(data_clean) == nrow(data))
 # DV is the treatment indicator
 # nboots should be at least 100.
 system.time({
-  mb1 = MatchBalance(treatment ~ ., data=data_clean, nboots=5000, print.level=0)
+  # Exclude the outcome variable, which is the first column.
+  mb1 = MatchBalance(treatment ~ ., data=data_clean[, -1], nboots=5000, print.level=0)
 })
 
 pvals_bm = extract_match_pvals(mb1)
@@ -217,7 +220,8 @@ save(gen1, mat1, file="data/violence-genmatch-results.RData")
 # Review balance of the with-replacement match; suppress lengthy automatic output
 # DV is the treatment indicator. nboots should be at least 100.
 system.time({
-  mb2 = MatchBalance(treatment ~ ., data=data_clean, match.out=mat1, nboots=5000, print.level=0)
+  # Exclude the outcome variable, which is the first column.
+  mb2 = MatchBalance(treatment ~ ., data=data_clean[, -1], match.out=mat1, nboots=5000, print.level=0)
 })
 pvals_am = extract_match_pvals(mb2)
 pvals_am
