@@ -39,6 +39,7 @@ summary(glm(any_arrest ~ treatment, data=data_arrest, family="gaussian"))
 summary(glm(any_violence ~ treatment, data=data_violence, family="gaussian"))
 
 (table("Tx"=data_arrest$treatment, "Arrest"=data_arrest$any_arrest, useNA="ifany"))
+(table("Tx"=data_violence$treatment, "Violence"=data_violence$any_violence, useNA="ifany"))
 ```
 
 ```{r}
@@ -230,7 +231,7 @@ summary(result_violence2$ghat$SL.predict)
 
 cat("Review distribution of weights (1/Ghat).\n")
 # Examine 1/gHatAW and 1/(1-gHatAW).
-wgts = pmax(1/result_arrest2$gHatAW, 1/(1-result_arrest2$gHatAW))
+wgts = pmax(1/result_violence2$gHatAW, 1/(1-result_violence2$gHatAW))
 summary(wgts)
 # Review 10 highest weights.
 wgts[order(wgts, decreasing=T)][1:10]
@@ -280,7 +281,7 @@ if (is.element("qinit_cv", names(result_violence2))) {
 	print(xtable(wgts), type = "html")
 	if (T) {
 	  # For presentation/paper
-	  print(xtable(wgts[1:10, ], caption="Violence - qInit - meta-weights"), type="latex")
+	  print(xtable(wgts[1:10, ], caption="Violence - meta-weights qInit"), type="latex")
 	}
 	
   # gHat SL meta-weights.
@@ -295,7 +296,7 @@ if (is.element("qinit_cv", names(result_violence2))) {
 	print(xtable(wgts), type = "html")
 	if (T) {
 	  # For presentation/paper
-	  print(xtable(wgts[1:10, ], caption="Violence - gHat - meta-weights"), type="latex")
+	  print(xtable(wgts[1:10, ], caption="Violence - meta-weights - gHat"), type="latex")
 	}
 }
 ```

@@ -192,8 +192,7 @@ summary(pvals_bm$bm_t)
 summary(pvals_bm_combined)
 # Ignore NAs for KS-test on dichotomous variables.
 sd(pvals_bm_combined, na.rm=T)
-#print(summary(pvalues))
-hist(pvals_bm_combined, main="Before Matching: p-values from MatchBalance", xlab=paste0("Mean = ", round(mean(pvals_bm_combined, na.rm=T), 3)))
+hist(pvals_bm_combined, main="Before Matching: p-values from MatchBalance", xlab=paste0("Mean = ", round(mean(pvals_bm_combined, na.rm=T), 4)))
 
 
 # Match with replacement, use available cluster.
