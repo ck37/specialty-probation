@@ -49,7 +49,7 @@ colnames(W_arrest)
 summary(W_arrest)
 
 # Now orthogonalize the covariates.
-W_arrest = orthogonalize(W_arrest, scale_sd=T)
+W_arrest = data.frame(orthogonalize(W_arrest, scale_sd=T))
 colnames(W_arrest)
 summary(W_arrest)
 
@@ -157,7 +157,7 @@ colnames(W_violence)
 summary(W_violence)
 
 # Now orthogonalize the covariates.
-W_violence = orthogonalize(W_violence, scale_sd=T)
+W_violence = data.frame(orthogonalize(W_violence, scale_sd=T))
 colnames(W_violence)
 summary(W_violence)
 
