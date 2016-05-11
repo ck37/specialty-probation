@@ -125,7 +125,7 @@ if (is.element("qinit_cv", names(result_arrest2))) {
   print(sum)
   rownames(sum) = NULL
   if (T) {
-    print(xtable(sum[1:10, c("Algorithm", "Ave", "se")], digits=3, caption="Arrest - qinit - risk estimates"))
+    print(xtable(sum[1:10, c("Algorithm", "Ave", "se")], digits=3, caption="Arrest - risk estimates - qInit"))
   }
 
 	sum = summary(result_arrest2$ghat_cv)
@@ -134,7 +134,7 @@ if (is.element("qinit_cv", names(result_arrest2))) {
   print(sum)
   rownames(sum) = NULL
   if (T) {
-    xtable(sum[1:10, c("Algorithm", "Ave", "se")], digits=3, caption = "Arrest - gHat - risk estimates")
+    print(xtable(sum[1:10, c("Algorithm", "Ave", "se")], digits=3, caption = "Re-arrest - risk estimates - gHat"))
   }
 
 }
@@ -158,7 +158,7 @@ if (is.element("qinit_cv", names(result_arrest2))) {
 
 	if (T) {	
 	  # For presentation/paper
-	  print(xtable(wgts[1:10, ],caption="Arrest - qInit - meta-weights"), type="latex")
+	  print(xtable(wgts[1:10, ],caption="Re-arrest - meta-weights - qInit"), type="latex")
 	}
 
   # ghat SL meta-weights
@@ -173,7 +173,7 @@ if (is.element("qinit_cv", names(result_arrest2))) {
 	print(xtable(wgts), type = "html")
 	if (T) {
 	  # For presentation/paper
-	  print(xtable(wgts[1:10, ], caption="Arrest - gHat - meta-weights"), type="latex")
+	  print(xtable(wgts[1:10, ], caption="Re-arrest - meta-weights - gHat"), type="latex")
 	}
 }
 ```
@@ -249,7 +249,7 @@ if (is.element("qinit_cv", names(result_violence2))) {
   print(sum)
   rownames(sum) = NULL
   if (T) {
-    xtable(sum[1:10, c("Algorithm", "Ave", "se")], digits=3, caption="Violence - risk estimates - qInit")
+    print(xtable(sum[1:10, c("Algorithm", "Ave", "se")], digits=3, caption="Violence - risk estimates - qInit"))
   }
 
 	sum = summary(result_violence2$ghat_cv)
@@ -258,7 +258,7 @@ if (is.element("qinit_cv", names(result_violence2))) {
   print(sum)
   rownames(sum) = NULL
   if (T) {
-    xtable(sum[1:10, c("Algorithm", "Ave", "se")], digits=3, caption = "Violence - risk estimates - gHat")
+    print(xtable(sum[1:10, c("Algorithm", "Ave", "se")], digits=3, caption = "Violence - risk estimates - gHat"))
   }
 }
 
