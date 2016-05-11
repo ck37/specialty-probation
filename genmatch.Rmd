@@ -35,6 +35,26 @@ colnames(W_arrest)
 
 data = W_arrest
 
+# Include gHat (propensity score) from SuperLearner.
+load("data/lib-robustness-analysis-arrest.RData")
+# SL.predict predicts A = 1, so it is the propensity score.
+arrest_pscore = results[[3]]$ghat$SL.predict
+summary(arrest_pscore)
+
+rm(results)
+gc()
+
+W_arrest = cbind(pscore=arrest_pscore, W_arrest)
+colnames(W_arrest)
+summary(W_arrest)
+
+# Now orthogonalize the covariates.
+W_arrest = orthogonalize(W_arrest, scale_sd=T)
+colnames(W_arrest)
+summary(W_arrest)
+
+# Use the propensity from library config #3, has minimum risk and is simple.
+
 # Variables we want to check for balance on, plus treatment.
 balance_covars = colnames(W_arrest)
 treat_var = "treatment"
@@ -122,6 +142,24 @@ W_violence = W_violence[, grep("miss_", colnames(W_violence), invert=T)]
 colnames(W_arrest)
 
 data = data_violence
+
+# Include gHat (propensity score) from SuperLearner.
+load("data/lib-robustness-analysis-violence.RData")
+# SL.predict predicts A = 1, so it is the propensity score.
+vio_pscore = results[[3]]$ghat$SL.predict
+summary(vio_pscore)
+
+rm(results)
+gc()
+
+W_violence = cbind(pscore=vio_pscore, W_violence)
+colnames(W_violence)
+summary(W_violence)
+
+# Now orthogonalize the covariates.
+W_violence = orthogonalize(W_violence, scale_sd=T)
+colnames(W_violence)
+summary(W_violence)
 
 # Variables we want to check for balance on, plus treatment.
 balance_covars = colnames(W_violence)

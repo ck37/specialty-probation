@@ -782,3 +782,30 @@ create_library_seq = function(nc) {
   libs = list(lib1, lib2, lib3, lib4, lib5, lib6, lib7, lib8, lib9)
   libs
 }
+
+# Orthogonalize covariates - via Kari Lock Morgan but with minor adjustments.
+orthogonalize = function(x, scale_sd=T) {
+  # Columns
+  k = dim(x)[2]
+  # Rows
+  n = dim(x)[1]
+  x = as.data.frame(x)
+  # Orthogonalized results
+  e = matrix(NA, nrow=n, ncol=k)
+  # Keep the first column as-is.
+  e[,1] = x[,1]
+  # Loop over each other covariate and orthogonalize against previous covariates.
+  for (j in 2:k) {
+    e[,j] = lm(x[,j] ~ ., data=as.data.frame(x[,1:(j-1)]))$residuals
+  }
+  # Scale the standard deviations.
+  if (scale_sd) {
+    for (j in 1:k) {
+      e[,j] = e[,j]/sd(e[,j])
+    }
+  }
+  if (length(colnames(x) > 0)) {
+    colnames(e) = colnames(x)
+  }
+  return(e)
+}
