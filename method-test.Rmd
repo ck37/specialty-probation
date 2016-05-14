@@ -1,0 +1,57 @@
+---
+title: ''
+author: "Chris Kennedy"
+date: "May 9, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("function_library.R")
+load_all_libraries()
+set.seed(1)
+load("data/analysis-dataset.RData")
+cluster = setup_parallelism()
+library(ggplot2)
+```
+
+## Arrest analysis.
+
+```{r}
+
+# Create multiple library configurations and see how estimates vary.
+# Also try to diagnose model overfitting.
+invisible(capture.output({
+  libs = create_library_seq(ncol(W_arrest))
+}))
+length(libs)
+cv_folds = 15
+crossvalidate=F
+sl_lib = libs[[3]]$lib
+sl_lib
+
+#sl_lib = c("SL.glmnet")
+
+#gmethod = "method.NNLS"
+gmethod = "method.NNloglik"
+qmethod = "method.NNloglik"
+#qmethod = "method.AUC"
+
+#parallel = "multicore"
+parallel = NULL
+```
+
+```{r}
+result = estimate_effect(Y=data_arrest$any_arrest,
+                    A=data_arrest$treatment, W=W_arrest,
+                    parallel = parallel, sl_lib = c(sl_lib, "SL.mean"),# "SL.polymars"),
+                    gmethod=gmethod, qmethod=qmethod,
+                    cluster=cluster, cv_folds = cv_folds,
+                    crossvalidate=crossvalidate, outer_cv_folds = 3)
+names(result)
+result$ghat$cvRisk
+result$ghat
+```
