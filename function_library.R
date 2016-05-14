@@ -20,6 +20,7 @@ load_all_libraries = function() {
     library(gam)
     library(xtable)
     library(arm)          # For bayesglm
+    library(ipred)        # Bagging
   })
 }
 
@@ -236,9 +237,10 @@ estimate_effect = function(Y, A, W,
 
   # This takes the per-obs max of 1/gHat1W and 1/gHat0W.
   max_gweight = max(pmax(1/gHatAW, 1/(1 - gHatAW)))
+  max_gweight_bounded = max(pmax(1/gHatAW_bounded, 1/(1 - gHatAW_bounded)))
 
   cat("Max g-weight:", round(max_gweight, 1), "\n")
-  cat("Max g-weight (truncated):", round(max(pmax(1/gHatAW_bounded, 1/(1 - gHatAW_bounded))), 1), "\n")
+  cat("Max g-weight (truncated):", round(max_gweight_bounded, 1), "\n")
 
   tmle = calculate_tmle(A=A, Y=Y, family=family, QbarAW,
                         Qbar1W, Qbar0W, gHatAW, gHat1W, gHat0W)
