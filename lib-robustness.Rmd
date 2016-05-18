@@ -16,6 +16,13 @@ set.seed(1)
 load("data/analysis-dataset.RData")
 cluster = setup_parallelism()
 library(ggplot2)
+
+#gmethod = "method.NNLS"
+gmethod = "method.NNloglik"
+#qmethod = "method.NNLS"
+qmethod = "method.NNloglik"
+crossvalidate = T
+cv_outer_folds = 10
 ```
 
 ## Arrest analysis.
@@ -42,11 +49,11 @@ for (lib_i in 1:length(libs)) {
   
   # estimate effects.
   # First try without outer CV to speed up completion time.
-  result = estimate_effect(Y=data_arrest$any_arrest,
+  result = estimate_effect(Y=data_arrest$any_arrest, gmethod=gmethod, qmethod=qmethod,
                       A=data_arrest$treatment, W=W_arrest,
                       parallel = "multicore", sl_lib = sl_lib,
                       cluster=cluster, cv_folds = cv_folds,
-                      crossvalidate=T, outer_cv_folds = 10)
+                      crossvalidate=crossvalidate, outer_cv_folds = cv_outer_folds)
   print(result$time)
  
   # Show extra info if we ran outer cross-validation. 
@@ -96,11 +103,11 @@ for (lib_i in 1:length(libs)) {
   cat("\nLib", lib_i, "with size:", length(sl_lib), "\n")
   
   # estimate effects.
-  result = estimate_effect(Y=data_violence$any_violence,
-                      A=data_violence$treatment, W=W_violence,
+  result = estimate_effect(Y=data_violence$any_violence, gmethod=gmethod, qmethod=qmethod,
+                       A=data_violence$treatment, W=W_violence,
                       parallel = "multicore", sl_lib = sl_lib,
                       cluster=cluster, cv_folds = cv_folds,
-                      crossvalidate=T, outer_cv_folds = 10)
+                      crossvalidate=crossvalidate, outer_cv_folds = cv_outer_folds)
   print(result$time)
  
   # Show extra info if we ran outer cross-validation. 
